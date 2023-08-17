@@ -1,0 +1,64 @@
+html {
+    background-color: #212529;
+}
+
+body {
+    background-color: #212529;
+}
+
+* {
+    color: #fff;
+}
+
+.btn-download {
+    width: 160px;
+    height: 40px;
+}
+
+
+footer {
+    background-color: #212529;
+    color: white;
+    text-align: center;
+    padding: 5px;
+ 
+  }
+  
+  footer p {
+    margin: 0;
+  }
+  
+
+#stopwatch {
+    font-weight: bold;
+    background-color: #212529;
+    border: 2px solid #b40000c4;
+    padding: 5px 10px;
+    border-radius: 5px;
+    display: inline-block;
+    margin-top: 2px;
+}
+
+.btn-normal{
+    margin-bottom: 5px;
+}
+
+.btn-stop{
+    margin-bottom: 5px;
+}
+
+.video-container {
+    position: relative;
+    display: inline-block;
+}
+
+.video-container video {
+    display: block;
+    max-width: 100%;
+}
+
+.video-container button {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
