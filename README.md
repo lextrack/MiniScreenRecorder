@@ -20,5 +20,5 @@ If you are looking for a more advanced recorder with different encoders, file fo
 </p>
 <h2 align="center">Acknowledgments</h2>
 <p align="left">
-Thanks to **Flaticon** for the icon and **dhruv479** for give me the idea to create this.
+Thanks to Flaticon for the icon and dhruv479 for give me the idea to create this.
 </p>
