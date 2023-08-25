@@ -5,7 +5,7 @@
 
 <h2 align="center">Introduction</h2>
 <p align="left">
-It's a simple web application to record your screen. The best part about it is that you can use it as a web application from <a href="https://lextrack.github.io/MiniScreenRecorder/" target="_blank">HERE</a>.
+It's a simple web application to record your screen. The best part about it is that you can use it as a web application from <a href="https://lextrack.github.io/MiniScreenRecorder/" target="_blank">HERE</a>. To record the system audio I recommend to use Edge, Chrome or Opera.
 </p>
 
 <h2 align="center">Advices</h2>
