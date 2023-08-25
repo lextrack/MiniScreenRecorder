@@ -43,7 +43,8 @@ stopButton.addEventListener('click', function () {
 
 const audioConstraints = {
     echoCancellation: false,
-    autoGainControl: false
+    autoGainControl: false,
+    noiseSuppression: false
 };
 
 const handleRecord = function ({stream, mimeType}) {
@@ -100,10 +101,10 @@ async function recordScreenWithAudioMicandDesk() {
         video: {
             cursor: 'motion'
         },
-        audio: true,
+        audio: audioConstraints,
     };
     if (!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia)) {
-        return window.alert('Screen Record not supported!')
+        return window.alert('Screen Record not supported in this device!')
     }
     let stream = null;
     const displayStream = await navigator.mediaDevices.getDisplayMedia(constraints);
@@ -137,10 +138,10 @@ async function recordScreenWithAudioDesk() {
         video: {
             cursor: 'motion'
         },
-        audio: true,
+        audio: audioConstraints,
     };
     if (!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia)) {
-        return window.alert('Screen Record not supported!')
+        return window.alert('Screen Record not supported in this device!')
     }
     let stream = null;
     const displayStream = await navigator.mediaDevices.getDisplayMedia(constraints);
