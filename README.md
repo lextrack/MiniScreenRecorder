@@ -1,7 +1,7 @@
 <h1>Mini Screen Recorder</h1>
 
 <p align="left">
-This is a tool to record your screen. You can capture your microphone or your system audio, beside the posibility to select the bitrate and the framerate. Available in Windows and Linux.
+This is a tool to record your screen. You can capture your microphone or system audio, besides the possibility to select the bitrate and framerate. Available on Windows and Linux.
 
 Please remember to install <a href="https://www.youtube.com/watch?v=jZLqNocSQDM">ffmpeg</a> and Python on your system.
 </p>
