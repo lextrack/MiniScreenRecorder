@@ -7,5 +7,5 @@ Please remember to install <a href="https://www.youtube.com/watch?v=jZLqNocSQDM"
 </p>
 
 <p align="center">
-  <a href="https://i.ibb.co/"><img src="https://i.ibb.co/k1Nt4zy/capturepy.png"></a>
+  <a href="https://i.ibb.co/"><img src="https://i.ibb.co/p1nTLh3/Untitled.png"></a>
 </p>
