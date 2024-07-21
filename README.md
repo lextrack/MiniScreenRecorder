@@ -3,7 +3,7 @@
 An open-source screen and audio recorder for Windows and Linux.
 
 <p align="center">
-  <a href="https://i.postimg.cc/HLx0D8Jj/Mini-Screen-Rec-Linux.png"><img src="https://i.postimg.cc/HLx0D8Jj/Mini-Screen-Rec-Linux.png"></a>
+  <a href="https://i.postimg.cc/"><img src="https://i.postimg.cc/CLkYkgGK/Screen-Rec-1-0-3.png"></a>
 </p>
 
 ## Required packages to run this app
@@ -23,6 +23,7 @@ An open-source screen and audio recorder for Windows and Linux.
 - Select output format
 - Select audio device
 - Select recording area
+- Support for multiple monitors
 
 ## Steps
 
@@ -52,7 +53,7 @@ An open-source screen and audio recorder for Windows and Linux.
   3. Add the base folder and the bin folder from the extracted files to your system's PATH.
 
   <p align="center">
-  <a href="https://i.postimg.cc/nhtSMSty/ffmpeg-Install-Windows.png"><img src="https://i.postimg.cc/nhtSMSty/ffmpeg-Install-Windows.png"></a>
+  <a href="https://i.postimg.cc/"><img src="https://i.postimg.cc/nhtSMSty/ffmpeg-Install-Windows.png"></a>
 </p>
 
 - **Linux**:
