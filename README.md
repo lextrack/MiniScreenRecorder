@@ -6,22 +6,22 @@ An open-source screen and audio recorder for Windows and Linux.
   <a href="https://i.postimg.cc/HLx0D8Jj/Mini-Screen-Rec-Linux.png"><img src="https://i.postimg.cc/HLx0D8Jj/Mini-Screen-Rec-Linux.png"></a>
 </p>
 
-## Features
-
-- Select theme (Dark/Light)
-- Set framerate (30/60 fps)
-- Set bitrate
-- Choose video codec (libx264/libx265)
-- Select output format (mp4/mkv)
-- Select audio device
-- Select recording area
-
 ## Required packages to run this app
 
 - Python 3.x
 - FFmpeg
 - Pillow
 - tkinter
+
+## Features
+
+- Select theme
+- Set framerate
+- Set bitrate
+- Choose video codec
+- Select output format
+- Select audio device
+- Select recording area
 
 ## Steps
 
