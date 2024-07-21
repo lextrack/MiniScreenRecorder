@@ -7,6 +7,8 @@ import os
 import datetime
 import webbrowser
 import time
+from configparser import ConfigParser
+from screeninfo import get_monitors
 from PIL import ImageGrab
 from AreaSelector import AreaSelector
 
@@ -16,9 +18,14 @@ class ScreenRecorderApp:
         self.root.title("Mini Screen Recorder")
         root.resizable(0, 0)
 
-        self.set_dark_theme()
+        self.config = ConfigParser()
+        self.config_file = 'config.ini'
+        self.load_config()
+
+        self.set_theme(self.config.get('Settings', 'theme', fallback='dark'))
 
         self.audio_devices = self.get_audio_devices()
+        self.monitors = self.get_monitors()
 
         self.set_icon()
         
@@ -30,8 +37,6 @@ class ScreenRecorderApp:
         self.elapsed_time = 0
         self.record_area = None
         self.area_selector = AreaSelector(root)
-        
-        self.bind_shortcuts()
 
     def set_icon(self):
         if platform.system() == 'Windows':
@@ -75,43 +80,57 @@ class ScreenRecorderApp:
         self.theme_label.grid(row=0, column=0, padx=10, pady=5, sticky="e")
         self.theme_combo = ttk.Combobox(self.root, values=["Dark", "Light"], width=25)
         self.theme_combo.grid(row=0, column=1, padx=10, pady=5, sticky="w")
-        self.theme_combo.current(0)
+        self.theme_combo.current(0 if self.config.get('Settings', 'theme', fallback='dark') == 'dark' else 1)
         self.theme_combo.config(state="readonly")
-        self.theme_combo.bind("<<ComboboxSelected>>", lambda event: self.set_theme(self.theme_combo.get().lower()))
+        self.theme_combo.bind("<<ComboboxSelected>>", self.change_theme)
+
+        self.monitor_label = ttk.Label(self.root, text="Monitor:")
+        self.monitor_label.grid(row=1, column=0, padx=10, pady=5, sticky="e")
+        self.monitor_combo = ttk.Combobox(self.root, values=[f"Monitor {i+1}: {monitor.name}" for i, monitor in enumerate(self.monitors)], width=25)
+        self.monitor_combo.grid(row=1, column=1, padx=10, pady=5, sticky="w")
+        self.monitor_combo.current(0)
+        self.monitor_combo.config(state="readonly")
+        self.monitor_combo.bind("<<ComboboxSelected>>", self.save_config)
 
         self.fps_label = ttk.Label(self.root, text="Framerate:")
-        self.fps_label.grid(row=1, column=0, padx=10, pady=5, sticky="e")
+        self.fps_label.grid(row=2, column=0, padx=10, pady=5, sticky="e")
         self.fps_combo = ttk.Combobox(self.root, values=["30", "60"], width=25)
-        self.fps_combo.grid(row=1, column=1, padx=10, pady=5, sticky="w")
-        self.fps_combo.current(1)
+        self.fps_combo.grid(row=2, column=1, padx=10, pady=5, sticky="w")
+        self.fps_combo.current(self.config.getint('Settings', 'fps'))
         self.fps_combo.config(state="readonly")
+        self.fps_combo.bind("<<ComboboxSelected>>", self.save_config)
         
         self.bitrate_label = ttk.Label(self.root, text="Bitrate:")
-        self.bitrate_label.grid(row=2, column=0, padx=10, pady=5, sticky="e")
+        self.bitrate_label.grid(row=3, column=0, padx=10, pady=5, sticky="e")
         self.bitrate_combo = ttk.Combobox(self.root, values=["2000k", "4000k", "6000k", "8000k", "10000k", "15000k", "20000k", "30000k"], width=25)
-        self.bitrate_combo.grid(row=2, column=1, padx=10, pady=5, sticky="w")
-        self.bitrate_combo.current(0)
+        self.bitrate_combo.grid(row=3, column=1, padx=10, pady=5, sticky="w")
+        self.bitrate_combo.current(self.config.getint('Settings', 'bitrate'))
         self.bitrate_combo.config(state="readonly")
+        self.bitrate_combo.bind("<<ComboboxSelected>>", self.save_config)
 
         self.codec_label = ttk.Label(self.root, text="Video Codec:")
-        self.codec_label.grid(row=3, column=0, padx=10, pady=5, sticky="e")
+        self.codec_label.grid(row=4, column=0, padx=10, pady=5, sticky="e")
         self.codec_combo = ttk.Combobox(self.root, values=["libx264", "libx265"], width=25)
-        self.codec_combo.grid(row=3, column=1, padx=10, pady=5, sticky="w")
-        self.codec_combo.current(0)
+        self.codec_combo.grid(row=4, column=1, padx=10, pady=5, sticky="w")
+        self.codec_combo.current(self.config.getint('Settings', 'codec'))
         self.codec_combo.config(state="readonly")
+        self.codec_combo.bind("<<ComboboxSelected>>", self.save_config)
         
         self.format_label = ttk.Label(self.root, text="Output Format:")
-        self.format_label.grid(row=4, column=0, padx=10, pady=5, sticky="e")
+        self.format_label.grid(row=5, column=0, padx=10, pady=5, sticky="e")
         self.format_combo = ttk.Combobox(self.root, values=["mp4", "mkv"], width=25)
-        self.format_combo.grid(row=4, column=1, padx=10, pady=5, sticky="w")
-        self.format_combo.current(0)
+        self.format_combo.grid(row=5, column=1, padx=10, pady=5, sticky="w")
+        self.format_combo.current(self.config.getint('Settings', 'format'))
         self.format_combo.config(state="readonly")
+        self.format_combo.bind("<<ComboboxSelected>>", self.save_config)
         
         self.audio_label = ttk.Label(self.root, text="Audio Device:")
-        self.audio_label.grid(row=5, column=0, padx=10, pady=5, sticky="e")
+        self.audio_label.grid(row=6, column=0, padx=10, pady=5, sticky="e")
         self.audio_combo = ttk.Combobox(self.root, values=self.audio_devices, width=25)
-        self.audio_combo.grid(row=5, column=1, padx=10, pady=5, sticky="w")
+        self.audio_combo.grid(row=6, column=1, padx=10, pady=5, sticky="w")
+        self.audio_combo.current(self.config.getint('Settings', 'audio'))
         self.audio_combo.config(state="readonly")
+        self.audio_combo.bind("<<ComboboxSelected>>", self.save_config)
 
         if self.audio_devices:
             self.audio_combo.current(0)
@@ -119,20 +138,20 @@ class ScreenRecorderApp:
             messagebox.showerror("Error", "No audio devices found.")
 
         self.volume_label = ttk.Label(self.root, text="Volume:")
-        self.volume_label.grid(row=6, column=0, padx=10, pady=5, sticky="e")
+        self.volume_label.grid(row=7, column=0, padx=10, pady=5, sticky="e")
         self.volume_scale = ttk.Scale(self.root, from_=0, to=100, orient=tk.HORIZONTAL)
         self.volume_scale.set(100)
-        self.volume_scale.grid(row=6, column=1, padx=10, pady=5, sticky="w")
+        self.volume_scale.grid(row=7, column=1, padx=10, pady=5, sticky="w")
 
         self.start_btn = ttk.Button(self.root, text="Start Recording", command=self.start_recording)
-        self.start_btn.grid(row=7, column=0, columnspan=2, pady=2)
+        self.start_btn.grid(row=8, column=0, columnspan=2, pady=2)
         
         self.stop_btn = ttk.Button(self.root, text="Stop Recording", command=self.stop_recording)
-        self.stop_btn.grid(row=8, column=0, columnspan=2, pady=2)
+        self.stop_btn.grid(row=9, column=0, columnspan=2, pady=2)
         self.stop_btn.config(state=tk.DISABLED)
 
         self.open_folder_btn = ttk.Button(self.root, text="Open Output Folder", command=self.open_output_folder)
-        self.open_folder_btn.grid(row=9, column=0, columnspan=2, pady=2)
+        self.open_folder_btn.grid(row=10, column=0, columnspan=2, pady=2)
 
         self.select_area_btn = ttk.Button(self.root, text="Select Recording Area", command=self.select_area)
         self.select_area_btn.grid(row=11, column=0, columnspan=2, pady=2)
@@ -177,6 +196,9 @@ class ScreenRecorderApp:
                         devices.append(parts[1])
             return devices
 
+    def get_monitors(self):
+        return get_monitors()
+
     def select_area(self):
         self.area_selector.select_area(self.set_record_area)
 
@@ -198,10 +220,6 @@ class ScreenRecorderApp:
         preview_canvas.create_rectangle(0, 0, width, height, outline='red', width=2)
         preview_window.after(2000, preview_window.destroy) 
 
-    def bind_shortcuts(self):
-        self.root.bind('<Control-r>', lambda event: self.start_recording())
-        self.root.bind('<Control-s>', lambda event: self.stop_recording())
-
     def start_recording(self):
         video_name = f"Video.{datetime.datetime.now().strftime('%m-%d-%Y.%H.%M.%S')}.{self.format_combo.get()}"
         self.video_path = os.path.join(self.output_folder, video_name)
@@ -211,6 +229,9 @@ class ScreenRecorderApp:
         codec = self.codec_combo.get()
         audio_device = self.audio_combo.get()
         volume = self.volume_scale.get()
+
+        monitor_index = self.monitor_combo.current()
+        monitor = self.monitors[monitor_index]
 
         if self.record_area:
             x1, y1, x2, y2 = self.record_area
@@ -231,8 +252,8 @@ class ScreenRecorderApp:
                     "ffmpeg",
                     "-f", "gdigrab",
                     "-framerate", str(fps),
-                    "-offset_x", str(x1),
-                    "-offset_y", str(y1),
+                    "-offset_x", str(x1 + monitor.x),
+                    "-offset_y", str(y1 + monitor.y),
                     "-video_size", f"{width}x{height}",
                     "-i", "desktop",
                     "-f", "dshow",
@@ -248,6 +269,9 @@ class ScreenRecorderApp:
                     "ffmpeg",
                     "-f", "gdigrab",
                     "-framerate", str(fps),
+                    "-offset_x", str(monitor.x),
+                    "-offset_y", str(monitor.y),
+                    "-video_size", f"{monitor.width}x{monitor.height}",
                     "-i", "desktop",
                     "-f", "dshow",
                     "-i", f"audio={audio_device}",
@@ -265,7 +289,7 @@ class ScreenRecorderApp:
                     "-f", "x11grab",
                     "-framerate", str(fps),
                     "-video_size", f"{width}x{height}",
-                    "-i", f"{os.getenv('DISPLAY')}+{x1},{y1}",
+                    "-i", f"{os.getenv('DISPLAY')}+{x1+monitor.x},{y1+monitor.y}",
                     "-f", "pulse",
                     "-i", audio_device,
                     "-filter:a", f"volume={volume/100}",
@@ -279,7 +303,8 @@ class ScreenRecorderApp:
                     "ffmpeg",
                     "-f", "x11grab",
                     "-framerate", str(fps),
-                    "-i", os.getenv('DISPLAY'),
+                    "-video_size", f"{monitor.width}x{monitor.height}",
+                    "-i", f"{os.getenv('DISPLAY')}+{monitor.x},{monitor.y}",
                     "-f", "pulse",
                     "-i", audio_device,
                     "-filter:a", f"volume={volume/100}",
@@ -317,10 +342,6 @@ class ScreenRecorderApp:
                     self.recording_process.stderr.close()
 
     def stop_recording(self):
-        confirm = messagebox.askyesno("Stop Recording", "Are you sure you want to stop the recording?")
-        if not confirm:
-            return
-
         if self.recording_process:
             if os.name == 'nt':  # Windows
                 self.recording_process.communicate(input='q')
@@ -349,6 +370,7 @@ class ScreenRecorderApp:
 
     def toggle_widgets(self, state):
         if state == tk.DISABLED:
+            self.monitor_combo.config(state=state)
             self.fps_combo.config(state=state)
             self.bitrate_combo.config(state=state)
             self.codec_combo.config(state=state)
@@ -357,6 +379,7 @@ class ScreenRecorderApp:
             self.volume_scale.config(state=state)
             self.select_area_btn.config(state=state)
         else:
+            self.monitor_combo.config(state="readonly")
             self.fps_combo.config(state="readonly")
             self.bitrate_combo.config(state="readonly")
             self.codec_combo.config(state="readonly")
@@ -394,7 +417,7 @@ class ScreenRecorderApp:
         info_window.resizable(0, 0)
         
         text = (
-            "Version 1.0.2\n\n"
+            "Version 1.0.3\n\n"
             "Mini Screen Recorder is an open-source\n"
             "screen and audio recorder for Windows and Linux.\n\n"
             "Original author: Lextrack.\n\n"
@@ -408,6 +431,40 @@ class ScreenRecorderApp:
         
         ttk.Label(info_window, text=text, font=("Arial", 10), justify=tk.LEFT).pack(pady=10, padx=10)
         ttk.Button(info_window, text="Close", command=info_window.destroy).pack(pady=20)
+
+    def change_theme(self, event=None):
+        theme = self.theme_combo.get().lower()
+        self.set_theme(theme)
+        self.save_config()
+
+    def save_config(self, event=None):
+        self.config['Settings'] = {
+            'theme': self.theme_combo.get().lower(),
+            'monitor': self.monitor_combo.current(),
+            'fps': self.fps_combo.current(),
+            'bitrate': self.bitrate_combo.current(),
+            'codec': self.codec_combo.current(),
+            'format': self.format_combo.current(),
+            'audio': self.audio_combo.current()
+        }
+        with open(self.config_file, 'w') as configfile:
+            self.config.write(configfile)
+
+    def load_config(self):
+        if os.path.exists(self.config_file):
+            self.config.read(self.config_file)
+        else:
+            self.config['Settings'] = {
+                'theme': 'dark',
+                'monitor': 0,
+                'fps': 1,
+                'bitrate': 1,
+                'codec': 0,
+                'format': 0,
+                'audio': 0
+            }
+            with open(self.config_file, 'w') as configfile:
+                self.config.write(configfile)
 
 if __name__ == "__main__":
     root = tk.Tk()
