@@ -7,11 +7,13 @@ import os
 import datetime
 import webbrowser
 import time
+from PIL import ImageGrab
+from AreaSelector import AreaSelector
 
 class ScreenRecorderApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Simple Screen Recorder")
+        self.root.title("Mini Screen Recorder")
         root.resizable(0, 0)
 
         self.set_dark_theme()
@@ -26,6 +28,10 @@ class ScreenRecorderApp:
         self.recording_process = None
         self.running = False
         self.elapsed_time = 0
+        self.record_area = None
+        self.area_selector = AreaSelector(root)
+        
+        self.bind_shortcuts()
 
     def set_icon(self):
         if platform.system() == 'Windows':
@@ -45,46 +51,102 @@ class ScreenRecorderApp:
         style.map("TCombobox", fieldbackground=[('readonly', '#1e1e1e')])
         style.configure("TButton", background="#1e1e1e", foreground="white")
         style.map("TButton", background=[('active', '#3e3e3e')], foreground=[('active', 'white')])
-        
+
+    def set_light_theme(self):
+        self.root.tk_setPalette(background="#f0f0f0", foreground="black", activeBackground="#d0d0d0", activeForeground="black")
+
+        style = ttk.Style()
+        style.theme_use("clam")
+
+        style.configure("TLabel", background="#f0f0f0", foreground="black")
+        style.configure("TCombobox", fieldbackground="#d0d0d0", background="#f0f0f0", foreground="black")
+        style.map("TCombobox", fieldbackground=[('readonly', '#d0d0d0')])
+        style.configure("TButton", background="#d0d0d0", foreground="black")
+        style.map("TButton", background=[('active', '#c0c0c0')], foreground=[('active', 'black')])
+
+    def set_theme(self, theme):
+        if theme == "dark":
+            self.set_dark_theme()
+        elif theme == "light":
+            self.set_light_theme()
+
     def init_ui(self):
+        self.theme_label = ttk.Label(self.root, text="Theme:")
+        self.theme_label.grid(row=0, column=0, padx=10, pady=5, sticky="e")
+        self.theme_combo = ttk.Combobox(self.root, values=["Dark", "Light"], width=25)
+        self.theme_combo.grid(row=0, column=1, padx=10, pady=5, sticky="w")
+        self.theme_combo.current(0)
+        self.theme_combo.config(state="readonly")
+        self.theme_combo.bind("<<ComboboxSelected>>", lambda event: self.set_theme(self.theme_combo.get().lower()))
+
         self.fps_label = ttk.Label(self.root, text="Framerate:")
-        self.fps_label.grid(row=0, column=0, padx=10, pady=5, sticky="e")
+        self.fps_label.grid(row=1, column=0, padx=10, pady=5, sticky="e")
         self.fps_combo = ttk.Combobox(self.root, values=["30", "60"], width=25)
-        self.fps_combo.grid(row=0, column=1, padx=10, pady=5, sticky="w")
+        self.fps_combo.grid(row=1, column=1, padx=10, pady=5, sticky="w")
         self.fps_combo.current(1)
         self.fps_combo.config(state="readonly")
         
         self.bitrate_label = ttk.Label(self.root, text="Bitrate:")
-        self.bitrate_label.grid(row=1, column=0, padx=10, pady=5, sticky="e")
+        self.bitrate_label.grid(row=2, column=0, padx=10, pady=5, sticky="e")
         self.bitrate_combo = ttk.Combobox(self.root, values=["2000k", "4000k", "6000k", "8000k", "10000k", "15000k", "20000k", "30000k"], width=25)
-        self.bitrate_combo.grid(row=1, column=1, padx=10, pady=5, sticky="w")
+        self.bitrate_combo.grid(row=2, column=1, padx=10, pady=5, sticky="w")
         self.bitrate_combo.current(0)
         self.bitrate_combo.config(state="readonly")
+
+        self.codec_label = ttk.Label(self.root, text="Video Codec:")
+        self.codec_label.grid(row=3, column=0, padx=10, pady=5, sticky="e")
+        self.codec_combo = ttk.Combobox(self.root, values=["libx264", "libx265"], width=25)
+        self.codec_combo.grid(row=3, column=1, padx=10, pady=5, sticky="w")
+        self.codec_combo.current(0)
+        self.codec_combo.config(state="readonly")
+        
+        self.format_label = ttk.Label(self.root, text="Output Format:")
+        self.format_label.grid(row=4, column=0, padx=10, pady=5, sticky="e")
+        self.format_combo = ttk.Combobox(self.root, values=["mp4", "mkv"], width=25)
+        self.format_combo.grid(row=4, column=1, padx=10, pady=5, sticky="w")
+        self.format_combo.current(0)
+        self.format_combo.config(state="readonly")
         
         self.audio_label = ttk.Label(self.root, text="Audio Device:")
-        self.audio_label.grid(row=2, column=0, padx=10, pady=5, sticky="e")
+        self.audio_label.grid(row=5, column=0, padx=10, pady=5, sticky="e")
         self.audio_combo = ttk.Combobox(self.root, values=self.audio_devices, width=25)
-        self.audio_combo.grid(row=2, column=1, padx=10, pady=5, sticky="w")
+        self.audio_combo.grid(row=5, column=1, padx=10, pady=5, sticky="w")
         self.audio_combo.config(state="readonly")
 
         if self.audio_devices:
             self.audio_combo.current(0)
         else:
             messagebox.showerror("Error", "No audio devices found.")
-        
+
+        self.volume_label = ttk.Label(self.root, text="Volume:")
+        self.volume_label.grid(row=6, column=0, padx=10, pady=5, sticky="e")
+        self.volume_scale = ttk.Scale(self.root, from_=0, to=100, orient=tk.HORIZONTAL)
+        self.volume_scale.set(100)
+        self.volume_scale.grid(row=6, column=1, padx=10, pady=5, sticky="w")
+
         self.start_btn = ttk.Button(self.root, text="Start Recording", command=self.start_recording)
-        self.start_btn.grid(row=3, column=0, columnspan=2, pady=2)
+        self.start_btn.grid(row=7, column=0, columnspan=2, pady=2)
         
         self.stop_btn = ttk.Button(self.root, text="Stop Recording", command=self.stop_recording)
-        self.stop_btn.grid(row=4, column=0, columnspan=2, pady=2)
+        self.stop_btn.grid(row=8, column=0, columnspan=2, pady=2)
         self.stop_btn.config(state=tk.DISABLED)
 
         self.open_folder_btn = ttk.Button(self.root, text="Open Output Folder", command=self.open_output_folder)
-        self.open_folder_btn.grid(row=5, column=0, columnspan=2, pady=2)
+        self.open_folder_btn.grid(row=9, column=0, columnspan=2, pady=2)
+
+        self.select_area_btn = ttk.Button(self.root, text="Select Recording Area", command=self.select_area)
+        self.select_area_btn.grid(row=11, column=0, columnspan=2, pady=2)
 
         self.timer_label = ttk.Label(self.root, text="00:00:00")
-        self.timer_label.grid(row=6, column=0, columnspan=2, pady=10)
+        self.timer_label.grid(row=12, column=0, columnspan=2, pady=10)
         self.timer_label.config(font=("Arial", 13))
+
+        self.info_btn = ttk.Button(self.root, text="About", command=self.show_info)
+        self.info_btn.grid(row=13, column=0, columnspan=2, pady=2)
+
+        self.status_label = ttk.Label(self.root, text="Status: Ready")
+        self.status_label.grid(row=14, column=0, columnspan=2, pady=5)
+        self.status_label.config(font=("Arial", 10))
 
     def create_output_folder(self):
         self.output_folder = os.path.join(os.getcwd(), "OutputFiles")
@@ -115,48 +177,129 @@ class ScreenRecorderApp:
                         devices.append(parts[1])
             return devices
 
+    def select_area(self):
+        self.area_selector.select_area(self.set_record_area)
+
+    def set_record_area(self, record_area):
+        self.record_area = record_area
+        if self.record_area:
+            self.preview_record_area()
+
+    def preview_record_area(self):
+        x1, y1, x2, y2 = self.record_area
+        width = x2 - x1
+        height = y2 - y1
+        preview_window = tk.Toplevel(self.root)
+        preview_window.geometry(f"{width}x{height}+{x1}+{y1}")
+        preview_window.overrideredirect(True)
+        preview_window.attributes('-alpha', 0.3)
+        preview_canvas = tk.Canvas(preview_window, width=width, height=height)
+        preview_canvas.pack()
+        preview_canvas.create_rectangle(0, 0, width, height, outline='red', width=2)
+        preview_window.after(2000, preview_window.destroy) 
+
+    def bind_shortcuts(self):
+        self.root.bind('<Control-r>', lambda event: self.start_recording())
+        self.root.bind('<Control-s>', lambda event: self.stop_recording())
+
     def start_recording(self):
-        video_name = f"Video.{datetime.datetime.now().strftime('%m-%d-%Y.%H.%M.%S')}.mp4"
+        video_name = f"Video.{datetime.datetime.now().strftime('%m-%d-%Y.%H.%M.%S')}.{self.format_combo.get()}"
         self.video_path = os.path.join(self.output_folder, video_name)
         
         fps = int(self.fps_combo.get())
         bitrate = self.bitrate_combo.get()
-
+        codec = self.codec_combo.get()
         audio_device = self.audio_combo.get()
+        volume = self.volume_scale.get()
+
+        if self.record_area:
+            x1, y1, x2, y2 = self.record_area
+            width = x2 - x1
+            height = y2 - y1
+            if width <= 0 or height <= 0:
+                messagebox.showerror("Error", "Invalid area selected. Please select a valid area.")
+                return
+            width -= width % 2
+            height -= height % 2
+            if width <= 0 or height <= 0:
+                messagebox.showerror("Error", "Adjusted width or height is zero. Please select a valid area.")
+                return
 
         if platform.system() == 'Windows':
-            ffmpeg_args = [
-                "ffmpeg",
-                "-f", "gdigrab",
-                "-framerate", str(fps),
-                "-i", "desktop",
-                "-f", "dshow",
-                "-i", f"audio={audio_device}",
-                "-c:v", "libx264",
-                "-b:v", bitrate,
-                "-pix_fmt", "yuv420p",
-                self.video_path
-            ]
+            if self.record_area:
+                ffmpeg_args = [
+                    "ffmpeg",
+                    "-f", "gdigrab",
+                    "-framerate", str(fps),
+                    "-offset_x", str(x1),
+                    "-offset_y", str(y1),
+                    "-video_size", f"{width}x{height}",
+                    "-i", "desktop",
+                    "-f", "dshow",
+                    "-i", f"audio={audio_device}",
+                    "-filter:a", f"volume={volume/100}",
+                    "-c:v", codec,
+                    "-b:v", bitrate,
+                    "-pix_fmt", "yuv420p",
+                    self.video_path
+                ]
+            else:
+                ffmpeg_args = [
+                    "ffmpeg",
+                    "-f", "gdigrab",
+                    "-framerate", str(fps),
+                    "-i", "desktop",
+                    "-f", "dshow",
+                    "-i", f"audio={audio_device}",
+                    "-filter:a", f"volume={volume/100}",
+                    "-c:v", codec,
+                    "-b:v", bitrate,
+                    "-pix_fmt", "yuv420p",
+                    self.video_path
+                ]
             creationflags = subprocess.CREATE_NO_WINDOW
         elif platform.system() == 'Linux':
-            ffmpeg_args = [
-                "ffmpeg",
-                "-f", "x11grab",
-                "-framerate", str(fps),
-                "-i", os.getenv('DISPLAY'),
-                "-f", "pulse",
-                "-i", audio_device,
-                "-c:v", "libx264",
-                "-b:v", bitrate,
-                "-pix_fmt", "yuv420p",
-                self.video_path
-            ]
+            if self.record_area:
+                ffmpeg_args = [
+                    "ffmpeg",
+                    "-f", "x11grab",
+                    "-framerate", str(fps),
+                    "-video_size", f"{width}x{height}",
+                    "-i", f"{os.getenv('DISPLAY')}+{x1},{y1}",
+                    "-f", "pulse",
+                    "-i", audio_device,
+                    "-filter:a", f"volume={volume/100}",
+                    "-c:v", codec,
+                    "-b:v", bitrate,
+                    "-pix_fmt", "yuv420p",
+                    self.video_path
+                ]
+            else:
+                ffmpeg_args = [
+                    "ffmpeg",
+                    "-f", "x11grab",
+                    "-framerate", str(fps),
+                    "-i", os.getenv('DISPLAY'),
+                    "-f", "pulse",
+                    "-i", audio_device,
+                    "-filter:a", f"volume={volume/100}",
+                    "-c:v", codec,
+                    "-b:v", bitrate,
+                    "-pix_fmt", "yuv420p",
+                    self.video_path
+                ]
             creationflags = 0 
         
-        self.recording_process = subprocess.Popen(ffmpeg_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, 
-                                                  stderr=subprocess.PIPE, universal_newlines=True, creationflags=creationflags)
+        try:
+            self.recording_process = subprocess.Popen(ffmpeg_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, 
+                                                      stderr=subprocess.PIPE, universal_newlines=True, creationflags=creationflags)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to start recording: {e}")
+            self.status_label.config(text="Status: Error")
+            return
 
         self.toggle_widgets(state=tk.DISABLED)
+        self.status_label.config(text="Status: Recording")
 
         self.start_timer()
 
@@ -164,30 +307,63 @@ class ScreenRecorderApp:
 
     def read_ffmpeg_output(self):
         if self.recording_process:
-            for stdout_line in iter(self.recording_process.stderr.readline, ""):
-                print(stdout_line)
-            if self.recording_process is not None:
-                self.recording_process.stderr.close()
+            try:
+                for stdout_line in iter(self.recording_process.stderr.readline, ""):
+                    print(stdout_line)
+            except Exception as e:
+                print(f"Error reading ffmpeg output: {e}")
+            finally:
+                if self.recording_process and self.recording_process.stderr:
+                    self.recording_process.stderr.close()
 
     def stop_recording(self):
+        confirm = messagebox.askyesno("Stop Recording", "Are you sure you want to stop the recording?")
+        if not confirm:
+            return
+
         if self.recording_process:
-            self.recording_process.communicate(input='q')
+            if os.name == 'nt':  # Windows
+                self.recording_process.communicate(input='q')
+            else: 
+                try:
+                    self.recording_process.terminate()
+                    self.recording_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.recording_process.kill()
+                finally:
+                    if self.recording_process.stdin:
+                        self.recording_process.stdin.close()
+                    if self.recording_process.stdout:
+                        self.recording_process.stdout.close()
+                    if self.recording_process.stderr:
+                        self.recording_process.stderr.close()
+            
             self.recording_process.wait()
             self.recording_process = None
 
             self.toggle_widgets(state=tk.NORMAL)
-
             self.stop_timer()
+            self.status_label.config(text="Status: Ready")
+
+            self.record_area = None
 
     def toggle_widgets(self, state):
         if state == tk.DISABLED:
             self.fps_combo.config(state=state)
             self.bitrate_combo.config(state=state)
+            self.codec_combo.config(state=state)
+            self.format_combo.config(state=state)
             self.audio_combo.config(state=state)
+            self.volume_scale.config(state=state)
+            self.select_area_btn.config(state=state)
         else:
             self.fps_combo.config(state="readonly")
             self.bitrate_combo.config(state="readonly")
+            self.codec_combo.config(state="readonly")
+            self.format_combo.config(state="readonly")
             self.audio_combo.config(state="readonly")
+            self.volume_scale.config(state=tk.NORMAL)
+            self.select_area_btn.config(state=tk.NORMAL)
 
         self.start_btn.config(state=state)
         self.stop_btn.config(state=tk.NORMAL if state == tk.DISABLED else tk.DISABLED)
@@ -210,6 +386,28 @@ class ScreenRecorderApp:
             elapsed_time_str = time.strftime("%H:%M:%S", time.gmtime(self.elapsed_time))
             self.timer_label.config(text=elapsed_time_str, foreground="red")
             self.root.after(1000, self.update_timer)
+
+    def show_info(self):
+        info_window = tk.Toplevel(self.root)
+        info_window.title("About")
+        info_window.geometry("320x250")
+        info_window.resizable(0, 0)
+        
+        text = (
+            "Version 1.0.2\n\n"
+            "Mini Screen Recorder is an open-source\n"
+            "screen and audio recorder for Windows and Linux.\n\n"
+            "Original author: Lextrack.\n\n"
+            "You can find this project on GitHub, its name\n"
+            "is 'MiniScreenRecorder', and my nickname\n"
+            "is 'Lextrack'. Keep an eye on this project, more\n"
+            "are updates coming soon!\n\n"
+            "This software is made possible by\n"
+            "FFmpeg and Flaticon."
+        )
+        
+        ttk.Label(info_window, text=text, font=("Arial", 10), justify=tk.LEFT).pack(pady=10, padx=10)
+        ttk.Button(info_window, text="Close", command=info_window.destroy).pack(pady=20)
 
 if __name__ == "__main__":
     root = tk.Tk()
