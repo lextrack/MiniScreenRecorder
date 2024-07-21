@@ -12,6 +12,7 @@ An open-source screen and audio recorder for Windows and Linux.
 - FFmpeg
 - Pillow
 - tkinter
+- screeninfo
 
 ## Features
 
