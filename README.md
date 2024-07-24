@@ -24,6 +24,7 @@ An open-source screen and audio recorder for Windows and Linux.
 - Select audio device
 - Select recording area
 - Support for multiple monitors
+- Multi-language support
 
 ## Steps
 
@@ -50,7 +51,7 @@ An open-source screen and audio recorder for Windows and Linux.
 - **Windows**:
   1. Download `ffmpeg-release-full.7z` from [FFmpeg official website](https://www.gyan.dev/ffmpeg/builds/).
   2. Extract the downloaded file in a folder called "ffmpeg" on your C:\ drive.
-  3. Add the path of the base folder and the bin folder of ffmpeg to your system's PATH.
+  3. Add the paths of the base folder and the bin folder of ffmpeg to the System Variables' PATH in Windows.
 
   <p align="center">
   <a href="https://i.postimg.cc/"><img src="https://i.postimg.cc/nhtSMSty/ffmpeg-Install-Windows.png"></a>
