@@ -16,6 +16,7 @@ from AreaSelector import AreaSelector
 class ScreenRecorderApp:
     def __init__(self, root):
         self.root = root
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.root.title("Mini Screen Recorder")
         root.resizable(0, 0)
 
@@ -257,7 +258,7 @@ class ScreenRecorderApp:
     def start_recording(self):
         video_name = f"Video.{datetime.datetime.now().strftime('%m-%d-%Y.%H.%M.%S')}.{self.format_combo.get()}"
         self.video_path = os.path.join(self.output_folder, video_name)
-        
+
         fps = int(self.fps_combo.get())
         bitrate = self.bitrate_combo.get()
         codec = self.codec_combo.get()
@@ -347,10 +348,10 @@ class ScreenRecorderApp:
                     "-pix_fmt", "yuv420p",
                     self.video_path
                 ]
-            creationflags = 0 
-        
+            creationflags = 0
+
         try:
-            self.recording_process = subprocess.Popen(ffmpeg_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, 
+            self.recording_process = subprocess.Popen(ffmpeg_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                                       stderr=subprocess.PIPE, universal_newlines=True, creationflags=creationflags)
         except Exception as e:
             messagebox.showerror(self.t("error"), self.t("error_start_recording").format(error=str(e)))
@@ -379,7 +380,7 @@ class ScreenRecorderApp:
         if self.recording_process:
             if os.name == 'nt':  # Windows
                 self.recording_process.communicate(input='q')
-            else: 
+            else:
                 try:
                     self.recording_process.terminate()
                     self.recording_process.wait(timeout=5)
@@ -392,7 +393,7 @@ class ScreenRecorderApp:
                         self.recording_process.stdout.close()
                     if self.recording_process.stderr:
                         self.recording_process.stderr.close()
-            
+
             self.recording_process.wait()
             self.recording_process = None
 
@@ -401,6 +402,14 @@ class ScreenRecorderApp:
             self.status_label.config(text=self.t("status_ready"))
 
             self.record_area = None
+
+    def on_closing(self):
+        if self.recording_process:
+            if messagebox.askokcancel(self.t("warning"), self.t("warning_quit")):
+                self.stop_recording()
+                self.root.destroy()
+        else:
+            self.root.destroy()
 
     def toggle_widgets(self, state):
         if state == tk.DISABLED:
