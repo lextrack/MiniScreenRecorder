@@ -3,7 +3,7 @@
 An open-source screen and audio recorder for Windows and Linux.
 
 <p align="center">
-  <a href="https://i.postimg.cc/"><img src="https://i.postimg.cc/pVYpvtQ9/miniscreenrecorder1-0-5.png"></a>
+  <a href="https://i.postimg.cc/"><img src="https://i.postimg.cc/gcw7zKp7/recorder1-0-6.png"></a>
 </p>
 
 ## Required packages to run this app
@@ -45,6 +45,9 @@ An open-source screen and audio recorder for Windows and Linux.
     ```bash
     python MiniScreenRecorder.py
     ```
+### Warning about User Account Control
+
+To prevent Windows UAC prompts from interrupting recording, you should select the second-to-last option, which says "Notify me only when apps try to make changes to my computer (do not dim my desktop)". Or, if you want, completely disable it.
 
 ## Installing FFmpeg
 
