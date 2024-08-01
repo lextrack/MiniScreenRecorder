@@ -57,7 +57,7 @@ Additionally for Linux:
     ```bash
     python3 main.py
     ```
-    Or in Windows (In the release section you can find a .exe for this app if you don't like the CMD):
+    Or in Windows:
 
     ```bash
     python main.py
