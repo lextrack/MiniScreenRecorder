@@ -1,23 +1,35 @@
 # Mini Screen Recorder
 
-An open-source screen and audio recorder for Windows and Linux.
+It's an open-source screen and audio recorder for Windows and Linux.
 
 <p align="center">
   <a href="https://i.postimg.cc/"><img src="https://i.postimg.cc/gcw7zKp7/recorder1-0-6.png"></a>
 </p>
 
-## Required packages to run this app
+## Software required to execute this app
 
 - Python 3.x
 - FFmpeg
-- Pillow
-- tkinter
-- screeninfo
+
+### To run this app you must install these libraries
+For Windows and Linux run this on your terminal:
+
+    ```bash
+    pip install pillow mss numpy opencv-python screeninfo
+    ```
+Additionally for Linux:
+
+    ```bash
+    sudo apt-get update
+    sudo apt-get install python3-pil.imagetk
+    sudo apt-get install libjpeg-dev zlib1g-dev libpng-dev libgl1-mesa-glx
+
+    ```
 
 ## Features
 
 - Select theme
-- Set framerate
+- Set frame rate
 - Set bitrate
 - Choose video codec
 - Select output format
@@ -28,28 +40,34 @@ An open-source screen and audio recorder for Windows and Linux.
 
 ## Steps
 
-1. Clone the repository from GitHub:
+1. Clone the repository from GitHub
 
     ```bash
     git clone https://github.com/Lextrack/MiniScreenRecorder.git
     ```
 
-2. Navigate to the project directory:
+2. Navigate to the project directory
 
     ```bash
     cd MiniScreenRecorder
     ```
 
-3. Run the app:
+3. Run the app on Linux:
 
     ```bash
-    python MiniScreenRecorder.py
+    python3 main.py
     ```
+    Or in Windows (In the release section you can find a .exe for this app if you don't like the CMD):
+
+    ```bash
+    python main.py
+    ```
+
 ### Warning about User Account Control
 
 To prevent Windows UAC prompts from interrupting recording, you should select the second-to-last option, which says "Notify me only when apps try to make changes to my computer (do not dim my desktop)". Or, if you want, completely disable it.
 
-## Installing FFmpeg
+## How to install FFmpeg
 
 - **Windows**:
   1. Download `ffmpeg-release-full.7z` from [FFmpeg official website](https://www.gyan.dev/ffmpeg/builds/).
