@@ -3,7 +3,7 @@
 It's an open-source screen and audio recorder for Windows and Linux.
 
 <p align="center">
-  <a href="https://i.postimg.cc/"><img src="https://i.postimg.cc/gcw7zKp7/recorder1-0-6.png"></a>
+  <a href="https://i.postimg.cc/"><img src="https://i.postimg.cc/TwNGNVCF/2024-07-31-20h19-14.png"></a>
 </p>
 
 ## Software required to execute this app
@@ -57,7 +57,7 @@ Additionally for Linux:
     ```bash
     python3 main.py
     ```
-    Or in Windows:
+    Or in Windows (In the release section you can find a .exe for this app if you don't like the CMD)::
 
     ```bash
     python main.py

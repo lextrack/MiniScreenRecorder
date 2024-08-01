@@ -499,13 +499,18 @@ class ScreenRecorderApp:
             #creationflags = 0
 
         ffmpeg_args[-1] = self.video_path
+        if platform.system() == 'Windows':
+            creationflags = subprocess.CREATE_NO_WINDOW
+        else:
+            creationflags = 0
         try:
             self.recording_process = subprocess.Popen(
                 ffmpeg_args, 
                 stdin=subprocess.PIPE, 
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE, 
-                universal_newlines=True
+                universal_newlines=True,
+                creationflags=creationflags
             )
         except Exception as e:
             messagebox.showerror(self.t("error"), self.t("error_start_recording").format(error=str(e)))
