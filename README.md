@@ -8,23 +8,42 @@ It's an open-source screen and audio recorder for Windows and Linux.
 
 ## Software required to execute this app
 
-- Python 3.x
-- FFmpeg
+### Windows Users
+
+If you download the packaged .exe file from the [Releases](https://github.com/Lextrack/MiniScreenRecorder/releases) section, you **do not** need to install Python, FFmpeg, or any additional libraries. Everything is included in the executable.
+
+### Linux Users
+
+You need to have Python 3.x and FFmpeg installed on your system, beside the additional libraries.
 
 ### To run this app you must install these libraries
-For Windows and Linux run this on your terminal:
+
+For Linux, run this in your terminal:
 
     ```bash
     pip install pillow mss numpy opencv-python screeninfo
     ```
-Additionally for Linux:
 
     ```bash
     sudo apt-get update
     sudo apt-get install python3-pil.imagetk
     sudo apt-get install libjpeg-dev zlib1g-dev libpng-dev libgl1-mesa-glx
-
     ```
+
+## How to install FFmpeg for Linux
+
+  1. Update the package index:
+      ```bash
+      sudo apt update
+      ```
+  2. Install FFmpeg:
+      ```bash
+      sudo apt install ffmpeg
+      ```
+  3. Verify the installation:
+      ```bash
+      ffmpeg -version
+      ```
 
 ## Features
 
@@ -55,42 +74,12 @@ Additionally for Linux:
 3. Run the app on Linux:
 
     ```bash
-    python3 main.py
-    ```
-    Or in Windows (In the release section you can find a .exe for this app if you don't like the CMD)::
-
-    ```bash
-    python main.py
+    python3 mainDebian.py
     ```
 
 ### Warning about User Account Control
 
 To prevent Windows UAC prompts from interrupting recording, you should select the second-to-last option, which says "Notify me only when apps try to make changes to my computer (do not dim my desktop)". Or, if you want, completely disable it.
-
-## How to install FFmpeg
-
-- **Windows**:
-  1. Download `ffmpeg-release-full.7z` from [FFmpeg official website](https://www.gyan.dev/ffmpeg/builds/).
-  2. Extract the downloaded file in a folder called "ffmpeg" on your C:\ drive.
-  3. Add the paths of the base folder and the bin folder of ffmpeg to the System Variables' PATH in Windows.
-
-  <p align="center">
-  <a href="https://i.postimg.cc/"><img src="https://i.postimg.cc/nhtSMSty/ffmpeg-Install-Windows.png"></a>
-</p>
-
-- **Linux**:
-  1. Update the package index:
-      ```bash
-      sudo apt update
-      ```
-  2. Install FFmpeg:
-      ```bash
-      sudo apt install ffmpeg
-      ```
-  3. Verify the installation:
-      ```bash
-      ffmpeg -version
-      ```
 
 ## License
 
