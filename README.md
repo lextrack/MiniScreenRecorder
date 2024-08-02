@@ -57,7 +57,7 @@ For Linux, run this in your terminal:
 - Support for multiple monitors
 - Multi-language support
 
-## Steps
+## Steps (Linux)
 
 1. Clone the repository from GitHub
 
