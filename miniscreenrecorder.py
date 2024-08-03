@@ -18,7 +18,6 @@ import cv2
 from themes import set_dark_theme, set_light_theme, set_dark_blue_theme, set_light_green_theme, set_purple_theme, set_starry_night_theme
 from translation_manager import TranslationManager
 import logging
-from logging.handlers import RotatingFileHandler
 
 from AreaSelector import AreaSelector
 

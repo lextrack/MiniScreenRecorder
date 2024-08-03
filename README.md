@@ -74,7 +74,7 @@ For Linux, run this in your terminal:
 3. Run the app on Linux:
 
     ```bash
-    python3 mainDebian.py
+    python3 miniscreenrecorderLinux.py
     ```
 
 ### Warning about User Account Control
