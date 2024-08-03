@@ -21,6 +21,8 @@ import logging
 
 from AreaSelector import AreaSelector
 
+#WINDOWS
+
 class ScreenRecorderApp:
     def __init__(self, root):
         self.root = root

@@ -19,6 +19,8 @@ from translation_manager import TranslationManager
 
 from AreaSelector import AreaSelector
 
+#DEBIAN
+
 class ScreenRecorderApp:
     def __init__(self, root):
         self.root = root
@@ -464,7 +466,6 @@ class ScreenRecorderApp:
                     "-pix_fmt", "yuv420p",
                     self.video_path
                 ]
-            #creationflags = subprocess.CREATE_NO_WINDOW
         elif platform.system() == 'Linux':
             if self.record_area:
                 ffmpeg_args = [
@@ -496,7 +497,6 @@ class ScreenRecorderApp:
                     "-pix_fmt", "yuv420p",
                     self.video_path
                 ]
-            #creationflags = 0
 
         ffmpeg_args[-1] = self.video_path
         if platform.system() == 'Windows':
