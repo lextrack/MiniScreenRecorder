@@ -6,7 +6,7 @@ It's an open-source screen and audio recorder for Windows and Linux.
   <a href="https://i.postimg.cc/"><img src="https://i.postimg.cc/TwNGNVCF/2024-07-31-20h19-14.png"></a>
 </p>
 
-## Software required to execute this app
+## Requirements to run the application
 
 ### Windows Users
 
