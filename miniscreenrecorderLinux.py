@@ -1,3 +1,5 @@
+#DEBIAN
+
 import platform
 import sys
 import tkinter as tk
@@ -8,22 +10,25 @@ import os
 import datetime
 import webbrowser
 import time
-from configparser import ConfigParser
-from screeninfo import get_monitors
-from PIL import ImageGrab, Image, ImageTk
 import mss
 import numpy as np
 import cv2
+import logging
+
 from themes import set_dark_theme, set_light_theme, set_dark_blue_theme, set_light_green_theme, set_purple_theme, set_starry_night_theme
 from translation_manager import TranslationManager
+from area_selector import AreaSelector
+from logging_config import setup_logging
+from configparser import ConfigParser
+from screeninfo import get_monitors
+from PIL import ImageGrab, Image, ImageTk
 
-from AreaSelector import AreaSelector
-
-#DEBIAN
+logger = setup_logging()
 
 class ScreenRecorderApp:
     def __init__(self, root):
         self.root = root
+        logger.info("THE APP WAS OPEN")
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.root.title("Mini Screen Recorder")
         root.resizable(0, 0)
@@ -303,7 +308,6 @@ class ScreenRecorderApp:
         self.preview_label.config(image='')
         self.preview_label.image = None
 
-
     def on_closing(self):
         self.close_preview()
 
@@ -328,7 +332,6 @@ class ScreenRecorderApp:
                 self.recording_process.stdin.flush()
             except (BrokenPipeError, OSError):
                 pass
-
             try:
                 self.recording_process.wait(timeout=5)
             except subprocess.TimeoutExpired:
@@ -431,46 +434,12 @@ class ScreenRecorderApp:
                 messagebox.showerror(self.t("error"), self.t("error_adjusted_area"))
                 return
 
-        if platform.system() == 'Windows':
-            if self.record_area:
-                ffmpeg_args = [
-                    "ffmpeg",
-                    "-f", "gdigrab",
-                    "-framerate", str(fps),
-                    "-offset_x", str(x1 + monitor.x),
-                    "-offset_y", str(y1 + monitor.y),
-                    "-video_size", f"{width}x{height}",
-                    "-i", "desktop",
-                    "-f", "dshow",
-                    "-i", f"audio={audio_device}",
-                    "-filter:a", f"volume={volume/100}",
-                    "-c:v", codec,
-                    "-b:v", bitrate,
-                    "-pix_fmt", "yuv420p",
-                    self.video_path
-                ]
-            else:
-                ffmpeg_args = [
-                    "ffmpeg",
-                    "-f", "gdigrab",
-                    "-framerate", str(fps),
-                    "-offset_x", str(monitor.x),
-                    "-offset_y", str(monitor.y),
-                    "-video_size", f"{monitor.width}x{monitor.height}",
-                    "-i", "desktop",
-                    "-f", "dshow",
-                    "-i", f"audio={audio_device}",
-                    "-filter:a", f"volume={volume/100}",
-                    "-c:v", codec,
-                    "-b:v", bitrate,
-                    "-pix_fmt", "yuv420p",
-                    self.video_path
-                ]
-        elif platform.system() == 'Linux':
+        if platform.system() == 'Linux':
             if self.record_area:
                 ffmpeg_args = [
                     "ffmpeg",
                     "-f", "x11grab",
+                    "-probesize", "100M",
                     "-framerate", str(fps),
                     "-video_size", f"{width}x{height}",
                     "-i", f"{os.getenv('DISPLAY')}+{x1+monitor.x},{y1+monitor.y}",
@@ -480,12 +449,15 @@ class ScreenRecorderApp:
                     "-c:v", codec,
                     "-b:v", bitrate,
                     "-pix_fmt", "yuv420p",
+                    "-loglevel", "info",      
+                    "-hide_banner",
                     self.video_path
                 ]
             else:
                 ffmpeg_args = [
                     "ffmpeg",
                     "-f", "x11grab",
+                    "-probesize", "100M",
                     "-framerate", str(fps),
                     "-video_size", f"{monitor.width}x{monitor.height}",
                     "-i", f"{os.getenv('DISPLAY')}+{monitor.x},{monitor.y}",
@@ -495,46 +467,48 @@ class ScreenRecorderApp:
                     "-c:v", codec,
                     "-b:v", bitrate,
                     "-pix_fmt", "yuv420p",
+                    "-loglevel", "info",      
+                    "-hide_banner",
                     self.video_path
                 ]
+            try:
+                self.recording_process = subprocess.Popen(
+                    ffmpeg_args, 
+                    stdin=subprocess.PIPE, 
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE, 
+                    universal_newlines=True
+                )
+            except Exception as e:
+                messagebox.showerror(self.t("error"), self.t("error_start_recording").format(error=str(e)))
+                logger.error(f"RECORDING ERROR: {e}. CHECK IF FFMPEG IS STILL RUNNING OR HAS PERMISSION TO RUN ON YOUR SYSTEM.")
+                self.status_label.config(text="Status: Error")
+                return
 
-        ffmpeg_args[-1] = self.video_path
-        if platform.system() == 'Windows':
-            creationflags = subprocess.CREATE_NO_WINDOW
-        else:
-            creationflags = 0
-        try:
-            self.recording_process = subprocess.Popen(
-                ffmpeg_args, 
-                stdin=subprocess.PIPE, 
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE, 
-                universal_newlines=True,
-                creationflags=creationflags
-            )
-        except Exception as e:
-            messagebox.showerror(self.t("error"), self.t("error_start_recording").format(error=str(e)))
-            self.status_label.config(text="Status: Error")
-            return
+            self.toggle_widgets(recording=True)
+            self.status_label.config(text=self.t("status_recording"))
 
-        self.toggle_widgets(recording=True)
-        self.status_label.config(text=self.t("status_recording"))
+            if not continue_timer:
+                self.start_timer()
 
-        if not continue_timer:
-            self.start_timer()
-
-        threading.Thread(target=self.read_ffmpeg_output, daemon=True).start()
+            threading.Thread(target=self.read_ffmpeg_output, daemon=True).start()
 
     def read_ffmpeg_output(self):
         if self.recording_process:
+            buffer = []
             try:
                 for stdout_line in iter(self.recording_process.stderr.readline, ""):
-                    print(stdout_line)
+                    buffer.append(stdout_line)
+                    if len(buffer) >= 100:
+                        logger.error("".join(buffer))
+                        buffer = []
             except BrokenPipeError:
-                print("FFmpeg process has been closed")
+                logger.warning("FFMPEG PROCESS HAS BEEN CLOSED")
             except Exception as e:
-                print(f"Error reading ffmpeg output: {e}")
+                logger.error(f"ERROR READING FFMPEG OUTPUT: {e}")
             finally:
+                if buffer:
+                    logger.info("".join(buffer))
                 if self.recording_process and self.recording_process.stderr:
                     self.recording_process.stderr.close()
 
@@ -600,10 +574,10 @@ class ScreenRecorderApp:
                 for video in self.video_parts:
                     os.remove(video)
                 
-                #messagebox.showinfo(self.t("success"), self.t("video_saved").format(path=output_file))
             except subprocess.CalledProcessError as e:
                 error_message = e.stderr.decode() if e.stderr else str(e)
                 messagebox.showerror(self.t("error"), self.t("error_concat_video").format(error=error_message))
+                logger.error(f"ERROR MERGING VIDEO: {error_message}")
 
             self.video_parts = []
             self.current_video_part = 0
@@ -674,6 +648,11 @@ class ScreenRecorderApp:
         self.init_ui()
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = ScreenRecorderApp(root)
-    root.mainloop()
+    try:
+        root = tk.Tk()
+        app = ScreenRecorderApp(root)
+        root.mainloop()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        messagebox.showerror("Error", f"An unexpected error occurred: {e}")
+        logger.error(f"AN ERROR OCCURRED: {e}")

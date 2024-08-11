@@ -1,3 +1,5 @@
+#WINDOWS
+
 import platform
 import sys
 import tkinter as tk
@@ -6,27 +8,31 @@ import subprocess
 import threading
 import os
 import datetime
-from venv import logger
 import webbrowser
 import time
-from configparser import ConfigParser
-from screeninfo import get_monitors
-from PIL import ImageGrab, Image, ImageTk
 import mss
 import numpy as np
 import cv2
-from themes import set_dark_theme, set_light_theme, set_dark_blue_theme, set_light_green_theme, set_purple_theme, set_starry_night_theme
-from translation_manager import TranslationManager
 import logging
 
-from AreaSelector import AreaSelector
+from audio_manager import AudioManager
+from themes import set_dark_theme, set_light_theme, set_dark_blue_theme, set_light_green_theme, set_purple_theme, set_starry_night_theme
+from translation_manager import TranslationManager
+from area_selector import AreaSelector
+from logging_config import setup_logging
+from configparser import ConfigParser
+from screeninfo import get_monitors
+from PIL import ImageGrab, Image, ImageTk
+from venv import logger
 
-#WINDOWS
+
+logger = setup_logging()
 
 class ScreenRecorderApp:
     def __init__(self, root):
         self.root = root
         self.initialize_ffmpeg()
+        logger.info("THE APP WAS OPEN")
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.root.title("Mini Screen Recorder")
         root.resizable(0, 0)
@@ -38,7 +44,8 @@ class ScreenRecorderApp:
         self.translation_manager = TranslationManager(self.config.get('Settings', 'language', fallback='en'))
         self.set_theme(self.config.get('Settings', 'theme', fallback='dark'))
 
-        self.audio_devices = self.get_audio_devices()
+        self.audio_manager = AudioManager()
+        self.audio_devices = self.audio_manager.audio_devices
         self.monitors = self.get_monitors()
 
         self.set_icon()
@@ -331,7 +338,6 @@ class ScreenRecorderApp:
                 self.recording_process.stdin.flush()
             except (BrokenPipeError, OSError):
                 pass
-
             try:
                 self.recording_process.wait(timeout=5)
             except subprocess.TimeoutExpired:
@@ -358,42 +364,6 @@ class ScreenRecorderApp:
         self.output_folder = os.path.join(os.getcwd(), "OutputFiles")
         if not os.path.exists(self.output_folder):
             os.makedirs(self.output_folder)
-
-    def get_audio_devices(self):
-        ffmpeg_path = self.get_ffmpeg_path()
-        print(f"FFmpeg path: {ffmpeg_path}")
-        print(f"FFmpeg exists: {os.path.exists(ffmpeg_path)}")
-
-        if platform.system() == 'Windows':
-            cmd = [ffmpeg_path, "-list_devices", "true", "-f", "dshow", "-i", "dummy"]
-            try:
-                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-                lines = result.stderr.splitlines()
-                devices = []
-                for line in lines:
-                    if "audio" in line:
-                        parts = line.split("\"")
-                        if len(parts) > 1:
-                            devices.append(parts[1])
-                return devices
-            except subprocess.CalledProcessError as e:
-                print(f"Error running FFmpeg: {e}")
-                print(f"FFmpeg output: {e.output}")
-                return []
-            except FileNotFoundError:
-                print(f"FFmpeg not found at {ffmpeg_path}")
-                return []
-        elif platform.system() == 'Linux':
-            cmd = ["pactl", "list", "sources"]
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            lines = result.stdout.splitlines()
-            devices = []
-            for line in lines:
-                if "Name:" in line:
-                    parts = line.split()
-                    if len(parts) > 1:
-                        devices.append(parts[1])
-            return devices
 
     def get_monitors(self):
         return get_monitors()
@@ -435,16 +405,13 @@ class ScreenRecorderApp:
 
         return ffmpeg_path
 
-    logging.basicConfig(filename='app.log', level=logging.DEBUG)
-
     def initialize_ffmpeg(self):
         ffmpeg_path = self.get_ffmpeg_path()
         if not os.path.exists(ffmpeg_path):
-            error_msg = f"FFmpeg not found at {ffmpeg_path}"
-            logger.error(error_msg)
-            messagebox.showerror("Error", error_msg)
+            logger.error("FFmpeg not found.")
+            messagebox.showerror("Error", f"FFmpeg not found.")
             sys.exit(1)
-        logger.info(f"FFmpeg found at {ffmpeg_path}")
+        logger.info("FFmpeg was found.")
         
     def start_recording(self, continue_timer=False):
         video_name = f"Video.{datetime.datetime.now().strftime('%m-%d-%Y.%H.%M.%S')}.{self.format_combo.get()}"
@@ -471,13 +438,14 @@ class ScreenRecorderApp:
             if width <= 0 or height <= 0:
                 messagebox.showerror(self.t("error"), self.t("error_adjusted_area"))
                 return
-                
+
         if platform.system() == 'Windows':
             if self.record_area:
                 ffmpeg_path = self.get_ffmpeg_path()
                 ffmpeg_args = [
                     ffmpeg_path,
                     "-f", "gdigrab",
+                    "-probesize", "100M",
                     "-framerate", str(fps),
                     "-offset_x", str(x1 + monitor.x),
                     "-offset_y", str(y1 + monitor.y),
@@ -489,6 +457,8 @@ class ScreenRecorderApp:
                     "-c:v", codec,
                     "-b:v", bitrate,
                     "-pix_fmt", "yuv420p",
+                    "-loglevel", "info",
+                    "-hide_banner",
                     self.video_path
                 ]
             else:
@@ -496,6 +466,7 @@ class ScreenRecorderApp:
                 ffmpeg_args = [
                     ffmpeg_path,
                     "-f", "gdigrab",
+                    "-probesize", "100M",
                     "-framerate", str(fps),
                     "-offset_x", str(monitor.x),
                     "-offset_y", str(monitor.y),
@@ -507,47 +478,13 @@ class ScreenRecorderApp:
                     "-c:v", codec,
                     "-b:v", bitrate,
                     "-pix_fmt", "yuv420p",
-                    self.video_path
-                ]
-        elif platform.system() == 'Linux':
-            if self.record_area:
-                ffmpeg_path = self.get_ffmpeg_path()
-                ffmpeg_args = [
-                    ffmpeg_path,
-                    "-f", "x11grab",
-                    "-framerate", str(fps),
-                    "-video_size", f"{width}x{height}",
-                    "-i", f"{os.getenv('DISPLAY')}+{x1+monitor.x},{y1+monitor.y}",
-                    "-f", "pulse",
-                    "-i", audio_device,
-                    "-filter:a", f"volume={volume/100}",
-                    "-c:v", codec,
-                    "-b:v", bitrate,
-                    "-pix_fmt", "yuv420p",
-                    self.video_path
-                ]
-            else:
-                ffmpeg_path = self.get_ffmpeg_path()
-                ffmpeg_args = [
-                    ffmpeg_path,
-                    "-f", "x11grab",
-                    "-framerate", str(fps),
-                    "-video_size", f"{monitor.width}x{monitor.height}",
-                    "-i", f"{os.getenv('DISPLAY')}+{monitor.x},{monitor.y}",
-                    "-f", "pulse",
-                    "-i", audio_device,
-                    "-filter:a", f"volume={volume/100}",
-                    "-c:v", codec,
-                    "-b:v", bitrate,
-                    "-pix_fmt", "yuv420p",
+                    "-loglevel", "info",
+                    "-hide_banner",
                     self.video_path
                 ]
 
         ffmpeg_args[-1] = self.video_path
-        if platform.system() == 'Windows':
-            creationflags = subprocess.CREATE_NO_WINDOW
-        else:
-            creationflags = 0
+        creationflags = subprocess.CREATE_NO_WINDOW
         try:
             self.recording_process = subprocess.Popen(
                 ffmpeg_args, 
@@ -559,6 +496,7 @@ class ScreenRecorderApp:
             )
         except Exception as e:
             messagebox.showerror(self.t("error"), self.t("error_start_recording").format(error=str(e)))
+            logger.error(f"RECORDING ERROR: {e}. CHECK IF FFMPEG IS STILL RUNNING OR HAS PERMISSION TO RUN ON YOUR SYSTEM.")
             self.status_label.config(text="Status: Error")
             return
 
@@ -572,14 +510,20 @@ class ScreenRecorderApp:
 
     def read_ffmpeg_output(self):
         if self.recording_process:
+            buffer = []
             try:
                 for stdout_line in iter(self.recording_process.stderr.readline, ""):
-                    print(stdout_line)
+                    buffer.append(stdout_line)
+                    if len(buffer) >= 100:
+                        logger.error("".join(buffer))
+                        buffer = []
             except BrokenPipeError:
-                print("FFmpeg process has been closed")
+                logger.warning("FFMPEG PROCESS HAS BEEN CLOSED")
             except Exception as e:
-                print(f"Error reading ffmpeg output: {e}")
+                logger.error(f"ERROR READING FFMPEG OUTPUT: {e}")
             finally:
+                if buffer:
+                    logger.info("".join(buffer))
                 if self.recording_process and self.recording_process.stderr:
                     self.recording_process.stderr.close()
 
@@ -590,7 +534,6 @@ class ScreenRecorderApp:
                 self.recording_process.stdin.flush()
             except (BrokenPipeError, OSError):
                 pass
-
             try:
                 self.recording_process.wait(timeout=5)
             except subprocess.TimeoutExpired:
@@ -624,6 +567,7 @@ class ScreenRecorderApp:
         if len(self.video_parts) > 0:
             ffmpeg_path = self.get_ffmpeg_path()
             concat_file = os.path.join(self.output_folder, "concat_list.txt")
+            
             with open(concat_file, 'w') as f:
                 for video in self.video_parts:
                     f.write(f"file '{os.path.basename(video)}'\n")
@@ -640,16 +584,18 @@ class ScreenRecorderApp:
             ]
             
             try:
-                subprocess.run(concat_command, check=True, stderr=subprocess.PIPE)
+                print(f"Executing command: {' '.join(concat_command)}")
+                result = subprocess.run(concat_command, check=True, capture_output=True, text=True)
+                print(f"FFmpeg output: {result.stderr}")
                 
                 os.remove(concat_file)
                 for video in self.video_parts:
                     os.remove(video)
                 
-                #messagebox.showinfo(self.t("success"), self.t("video_saved").format(path=output_file))
             except subprocess.CalledProcessError as e:
-                error_message = e.stderr.decode() if e.stderr else str(e)
+                error_message = e.stderr if e.stderr else str(e)
                 messagebox.showerror(self.t("error"), self.t("error_concat_video").format(error=error_message))
+                logger.error(f"ERROR MERGING VIDEO: {error_message}")
 
             self.video_parts = []
             self.current_video_part = 0
@@ -727,3 +673,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"An error occurred: {e}")
         messagebox.showerror("Error", f"An unexpected error occurred: {e}")
+        logger.error(f"AN ERROR OCCURRED: {e}")
+        
