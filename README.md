@@ -67,7 +67,7 @@ For Linux, run this in your terminal:
     cd MiniScreenRecorder
     ```
 
-3. Run the app on Linux:
+3. Run the app:
 
     ```bash
     python3 miniscreenrecorderLinux.py
