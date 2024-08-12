@@ -4,8 +4,13 @@ import os
 class TranslationManager:
     def __init__(self, language='en'):
         self.language = language
+        self.is_rtl = self.check_rtl_language(language)
         self.translation = ConfigParser()
         self.load_translation()
+
+    def check_rtl_language(self, language):
+        rtl_languages = ['ar']
+        return language in rtl_languages
 
     def load_translation(self):
         translations_folder = 'translations'

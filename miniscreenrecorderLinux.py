@@ -133,7 +133,8 @@ class ScreenRecorderApp:
             'Pусский': 'ru',
             "日本語": 'ja',
             "한국어": 'ko',
-            "Polski": 'pl'
+            "Polski": 'pl',
+            "العربية": 'ar'
         }
         new_language = language_map.get(selected_language, 'en')
         
@@ -147,11 +148,19 @@ class ScreenRecorderApp:
     def init_ui(self):
         self.language_label = ttk.Label(self.root, text=self.t("Language") + ":")
         self.language_label.grid(row=0, column=0, padx=10, pady=5, sticky="e")
-        self.language_combo = ttk.Combobox(self.root, values=["English", "Español", "中文(简体)", "Italiano", "Français", "हिन्दी", "Deutsch", "Português", "Pусский", "日本語", "한국어", "Polski"], width=25)
+
+        self.language_combo = ttk.Combobox(self.root, values=["English", "Español", "中文(简体)", "Italiano", "Français", "हिन्दी", "Deutsch", "Português", "Pусский", "日本語", "한국어", "Polski", "العربية"], width=25)
         self.language_combo.grid(row=0, column=1, padx=10, pady=5, sticky="w")
-        self.language_combo.current(["en", "es", "zh", "it", "fr", "hi", "de", "pt", "ru", "ja", "ko", "pl"].index(self.translation_manager.language))
+        self.language_combo.current(["en", "es", "zh", "it", "fr", "hi", "de", "pt", "ru", "ja", "ko", "pl", "ar"].index(self.translation_manager.language))
         self.language_combo.config(state="readonly")
         self.language_combo.bind("<<ComboboxSelected>>", self.change_language)
+
+        if self.translation_manager.is_rtl:
+            self.language_label.config(anchor="e")
+            self.language_combo.config(justify="right")
+        else:
+            self.language_label.config(anchor="w")
+            self.language_combo.config(justify="left")
 
         self.theme_label = ttk.Label(self.root, text=self.t("theme") + ":")
         self.theme_label.grid(row=1, column=0, padx=10, pady=5, sticky="e")
@@ -292,7 +301,7 @@ class ScreenRecorderApp:
                     if self.preview_label and self.preview_label.winfo_exists():
                         self.root.after(0, self._update_preview_label, tk_image)
 
-                    time.sleep(0.02)
+                    time.sleep(0.002)
                 except tk.TclError:
                     break
                 
@@ -310,6 +319,7 @@ class ScreenRecorderApp:
 
     def on_closing(self):
         self.close_preview()
+        self.root.destroy()
 
     def on_monitor_change(self, event=None):
         if self.running:
@@ -425,73 +435,60 @@ class ScreenRecorderApp:
             x1, y1, x2, y2 = self.record_area
             width = x2 - x1
             height = y2 - y1
+
             if width <= 0 or height <= 0:
                 messagebox.showerror(self.t("error"), self.t("error_invalid_area"))
                 return
+
             width -= width % 2
             height -= height % 2
             if width <= 0 or height <= 0:
                 messagebox.showerror(self.t("error"), self.t("error_adjusted_area"))
                 return
+        else:
+            x1 = y1 = 0
+            width = monitor.width
+            height = monitor.height
 
-        if platform.system() == 'Linux':
-            if self.record_area:
-                ffmpeg_args = [
-                    "ffmpeg",
-                    "-f", "x11grab",
-                    "-probesize", "100M",
-                    "-framerate", str(fps),
-                    "-video_size", f"{width}x{height}",
-                    "-i", f"{os.getenv('DISPLAY')}+{x1+monitor.x},{y1+monitor.y}",
-                    "-f", "pulse",
-                    "-i", audio_device,
-                    "-filter:a", f"volume={volume/100}",
-                    "-c:v", codec,
-                    "-b:v", bitrate,
-                    "-pix_fmt", "yuv420p",
-                    "-loglevel", "info",      
-                    "-hide_banner",
-                    self.video_path
-                ]
-            else:
-                ffmpeg_args = [
-                    "ffmpeg",
-                    "-f", "x11grab",
-                    "-probesize", "100M",
-                    "-framerate", str(fps),
-                    "-video_size", f"{monitor.width}x{monitor.height}",
-                    "-i", f"{os.getenv('DISPLAY')}+{monitor.x},{monitor.y}",
-                    "-f", "pulse",
-                    "-i", audio_device,
-                    "-filter:a", f"volume={volume/100}",
-                    "-c:v", codec,
-                    "-b:v", bitrate,
-                    "-pix_fmt", "yuv420p",
-                    "-loglevel", "info",      
-                    "-hide_banner",
-                    self.video_path
-                ]
-            try:
-                self.recording_process = subprocess.Popen(
-                    ffmpeg_args, 
-                    stdin=subprocess.PIPE, 
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE, 
-                    universal_newlines=True
-                )
-            except Exception as e:
-                messagebox.showerror(self.t("error"), self.t("error_start_recording").format(error=str(e)))
-                logger.error(f"RECORDING ERROR: {e}. CHECK IF FFMPEG IS STILL RUNNING OR HAS PERMISSION TO RUN ON YOUR SYSTEM.")
-                self.status_label.config(text="Status: Error")
-                return
+        display = os.getenv('DISPLAY')
+        ffmpeg_args = [
+            "ffmpeg",
+            "-f", "x11grab",
+            "-framerate", str(fps),
+            "-video_size", f"{width}x{height}",
+            "-i", f"{display}+{x1+monitor.x},{y1+monitor.y}",
+            "-f", "pulse",
+            "-i", audio_device,
+            "-filter:a", f"volume={volume/100}",
+            "-c:v", codec,
+            "-b:v", bitrate,
+            "-pix_fmt", "yuv420p",
+            "-loglevel", "info",
+            "-hide_banner",
+            self.video_path
+        ]
 
-            self.toggle_widgets(recording=True)
-            self.status_label.config(text=self.t("status_recording"))
+        try:
+            self.recording_process = subprocess.Popen(
+                ffmpeg_args, 
+                stdin=subprocess.PIPE, 
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, 
+                universal_newlines=True
+            )
+        except Exception as e:
+            messagebox.showerror(self.t("error"), self.t("error_start_recording").format(error=str(e)))
+            logger.error(f"RECORDING ERROR: {e}. CHECK IF FFMPEG IS STILL RUNNING OR HAS PERMISSION TO RUN ON YOUR SYSTEM.")
+            self.status_label.config(text="Status: Error")
+            return
 
-            if not continue_timer:
-                self.start_timer()
+        self.toggle_widgets(recording=True)
+        self.status_label.config(text=self.t("status_recording"))
 
-            threading.Thread(target=self.read_ffmpeg_output, daemon=True).start()
+        if not continue_timer:
+            self.start_timer()
+
+        threading.Thread(target=self.read_ffmpeg_output, daemon=True).start()
 
     def read_ffmpeg_output(self):
         if self.recording_process:
@@ -639,8 +636,22 @@ class ScreenRecorderApp:
         info_window.resizable(0, 0)
 
         text = self.t("version_info")
-        
-        ttk.Label(info_window, text=text, justify=tk.LEFT).pack(pady=10, padx=10)
+
+        if self.translation_manager.is_rtl:
+            anchor = tk.E 
+            justify = tk.RIGHT
+        else:
+            anchor = tk.W 
+            justify = tk.LEFT
+
+        text_widget = tk.Text(info_window, wrap=tk.WORD, padx=10, pady=10, bg=info_window.cget("bg"), bd=0, font=("Arial", 10))
+        text_widget.insert(tk.END, text)
+        text_widget.configure(state=tk.DISABLED) 
+        text_widget.pack(fill=tk.BOTH, expand=True)
+
+        text_widget.tag_configure("right", justify=tk.RIGHT)
+        text_widget.tag_add("right", "1.0", tk.END) if self.translation_manager.is_rtl else text_widget.tag_configure("left", justify=tk.LEFT)
+        text_widget.tag_add("left", "1.0", tk.END) if not self.translation_manager.is_rtl else None
 
     def reload_ui(self):
         for widget in self.root.winfo_children():
