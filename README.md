@@ -18,6 +18,12 @@ It's an open-source screen and audio recorder for Windows and Linux.
 - Support for multiple monitors
 - Multi-language support
 
+## Video Demo
+
+Just a simple gameplay recorded with this app. Click the badge to watch the video:
+
+[![Watch on YouTube](https://img.shields.io/badge/YouTube-Watch%20Video-red?style=for-the-badge&logo=youtube)](https://youtu.be/7Ji-maVmPac)
+
 ## Requirements to run the application
 
 ### Windows Users
