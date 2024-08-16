@@ -25,7 +25,6 @@ from screeninfo import get_monitors
 from PIL import ImageGrab, Image, ImageTk
 from venv import logger
 
-
 logger = setup_logging()
 
 class ScreenRecorderApp:
@@ -41,7 +40,7 @@ class ScreenRecorderApp:
         self.config_file = 'config.ini'
         self.load_config()
 
-        self.translation_manager = TranslationManager(self.config.get('Settings', 'language', fallback='en'))
+        self.translation_manager = TranslationManager(self.config.get('Settings', 'language', fallback='en-US'))
         self.set_theme(self.config.get('Settings', 'theme', fallback='dark'))
 
         self.audio_manager = AudioManager()
@@ -112,7 +111,7 @@ class ScreenRecorderApp:
             self.config.read(self.config_file)
         else:
             self.config['Settings'] = {
-                'language': 'en',
+                'language': 'en-US',
                 'theme': 'dark',
                 'monitor': 0,
                 'fps': 1,
@@ -127,21 +126,27 @@ class ScreenRecorderApp:
     def change_language(self, event=None):
         selected_language = self.language_combo.get()
         language_map = {
-            'English': 'en',
-            'Español': 'es',
-            '中文(简体)': 'zh',
-            'Italiano': 'it',
-            'Français': 'fr',
-            'हिन्दी': 'hi',
-            'Deutsch': 'de',
-            'Português': 'pt',
-            'Pусский': 'ru',
-            "日本語": 'ja',
-            "한국어": 'ko',
-            "Polski": 'pl',
-            "العربية": 'ar'
+            'English': 'en-US',
+            'Español': 'es-CL',
+            '简体中文': 'zh-Hans',
+            "繁體中文": 'zh-Hant',
+            'Italiano': 'it-IT',
+            'Français': 'fr-FR',
+            'हिन्दी': 'hi-IN',
+            'Deutsch': 'de-DE',
+            'Português': 'pt-BR',
+            'Pусский': 'ru-RU',
+            "日本語": 'ja-JP',
+            "한국어": 'ko-KR',
+            "Polski": 'pl-PL',
+            "العربية": 'ar',
+            "Tiếng Việt": 'vi-VN',
+            "українська мова": 'uk-UA',
+            "ไทยกลาง": 'th-TH',
+            "Filipino": 'fil-PH',
+            "Türkçe": 'tr-TR'
         }
-        new_language = language_map.get(selected_language, 'en')
+        new_language = language_map.get(selected_language, 'en-US')
         
         if new_language != self.translation_manager.language:
             self.translation_manager.change_language(new_language)
@@ -153,29 +158,21 @@ class ScreenRecorderApp:
     def init_ui(self):
         self.language_label = ttk.Label(self.root, text=self.t("Language") + ":")
         self.language_label.grid(row=0, column=0, padx=10, pady=5, sticky="e")
-
-        self.language_combo = ttk.Combobox(self.root, values=["English", "Español", "中文(简体)", "Italiano", "Français", "हिन्दी", "Deutsch", "Português", "Pусский", "日本語", "한국어", "Polski", "العربية"], width=25)
+        self.language_combo = ttk.Combobox(self.root, values=["English", "Español", "简体中文", "繁體中文", "Italiano", "Français", "हिन्दी", "Deutsch", "Português", "Pусский", 
+                                                              "日本語", "한국어", "Polski", "العربية", "Tiếng Việt", "українська мова", "ไทยกลาง", "Filipino", "Türkçe"], width=25)
         self.language_combo.grid(row=0, column=1, padx=10, pady=5, sticky="w")
-        self.language_combo.current(["en", "es", "zh", "it", "fr", "hi", "de", "pt", "ru", "ja", "ko", "pl", "ar"].index(self.translation_manager.language))
+        self.language_combo.current(["en-US", "es-CL", "zh-Hans", "zh-Hant", "it-IT", "fr-FR", "hi-IN", "de-DE", "pt-BR", "ru-RU", 
+                                     "ja-JP", "ko-KR", "pl-PL", "ar", "vi-VN", "uk-UA", "th-TH", "fil-PH", "tr-TR"].index(self.translation_manager.language))
         self.language_combo.config(state="readonly")
         self.language_combo.bind("<<ComboboxSelected>>", self.change_language)
-
-        if self.translation_manager.is_rtl:
-            self.language_label.config(anchor="e")
-            self.language_combo.config(justify="right")
-        else:
-            self.language_label.config(anchor="w")
-            self.language_combo.config(justify="left")
-
+        
         self.theme_label = ttk.Label(self.root, text=self.t("theme") + ":")
         self.theme_label.grid(row=1, column=0, padx=10, pady=5, sticky="e")
         self.theme_combo = ttk.Combobox(self.root, values=["Dark", "Light", "Dark Blue", "Light Green", "Purple", "Starry Night"], width=25)
         self.theme_combo.grid(row=1, column=1, padx=10, pady=5, sticky="w")
-        
         current_theme = self.config.get('Settings', 'theme', fallback='dark')
         theme_index = {"dark": 0, "light": 1, "dark blue": 2, "light green": 3, "purple": 4, "starry night": 5}.get(current_theme, 0)
         self.theme_combo.current(theme_index)
-        
         self.theme_combo.config(state="readonly")
         self.theme_combo.bind("<<ComboboxSelected>>", self.change_theme)
 
@@ -226,7 +223,6 @@ class ScreenRecorderApp:
         self.audio_combo.current(self.config.getint('Settings', 'audio'))
         self.audio_combo.config(state="readonly")
         self.audio_combo.bind("<<ComboboxSelected>>", self.save_config)
-
         if self.audio_devices:
             self.audio_combo.current(0)
         else:
@@ -242,10 +238,18 @@ class ScreenRecorderApp:
         self.toggle_btn.grid(row=9, column=0, columnspan=2, pady=2)
 
         self.open_folder_btn = ttk.Button(self.root, text=self.t("open_output_folder"), command=self.open_output_folder)
-        self.open_folder_btn.grid(row=11, column=0, columnspan=2, pady=2)
+        self.open_folder_btn.grid(row=10, column=0, columnspan=2, pady=2)
 
         self.select_area_btn = ttk.Button(self.root, text=self.t("select_recording_area"), command=self.select_area)
-        self.select_area_btn.grid(row=12, column=0, columnspan=2, pady=2)
+        self.select_area_btn.grid(row=11, column=0, columnspan=2, pady=2)
+
+        self.preview_btn = ttk.Button(self.root, text=self.t("start_preview"), command=self.toggle_preview_monitor)
+        self.preview_btn.grid(row=12, column=0, columnspan=2, pady=2)
+
+        self.preview_frame = ttk.Frame(self.root)
+        self.preview_frame.grid(row=13, column=0, columnspan=2, pady=5, padx=10)
+        self.preview_label = ttk.Label(self.preview_frame)
+        self.preview_label.pack()
 
         self.timer_label = ttk.Label(self.root, text="00:00:00")
         self.timer_label.grid(row=14, column=0, columnspan=2, pady=10)
@@ -257,14 +261,6 @@ class ScreenRecorderApp:
         self.status_label = ttk.Label(self.root, text=self.t("status_ready"))
         self.status_label.grid(row=16, column=0, columnspan=2, pady=5)
         self.status_label.config(font=("Arial", 10))
-
-        self.preview_frame = ttk.Frame(self.root)
-        self.preview_frame.grid(row=13, column=0, columnspan=2, pady=5, padx=10)
-        self.preview_label = ttk.Label(self.preview_frame)
-        self.preview_label.pack()
-        
-        self.preview_btn = ttk.Button(self.root, text=self.t("start_preview"), command=self.toggle_preview_monitor)
-        self.preview_btn.grid(row=10, column=0, columnspan=2, pady=2)
 
     def toggle_preview_monitor(self):
         if self.preview_running:
@@ -297,7 +293,7 @@ class ScreenRecorderApp:
                     screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGBA2RGB)
                     screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB)
 
-                    max_size = (420, 240)
+                    max_size = (400, 240)
                     screenshot = cv2.resize(screenshot, max_size, interpolation=cv2.INTER_AREA)
 
                     image = Image.fromarray(screenshot)
@@ -306,7 +302,7 @@ class ScreenRecorderApp:
                     if self.preview_label and self.preview_label.winfo_exists():
                         self.root.after(0, self._update_preview_label, tk_image)
 
-                    time.sleep(0.002)
+                    time.sleep(0.03)
                 except tk.TclError:
                     break
                 
@@ -324,6 +320,7 @@ class ScreenRecorderApp:
 
     def on_closing(self):
         self.close_preview()
+        self.root.quit()
         self.root.destroy()
 
     def on_monitor_change(self, event=None):
@@ -396,7 +393,7 @@ class ScreenRecorderApp:
         preview_canvas = tk.Canvas(preview_window, width=width, height=height)
         preview_canvas.pack()
         preview_canvas.create_rectangle(0, 0, width, height, outline='red', width=2)
-        preview_window.after(2000, preview_window.destroy)
+        preview_window.after(1000, preview_window.destroy)
 
     def get_ffmpeg_path(self):
         if getattr(sys, 'frozen', False):
@@ -484,11 +481,15 @@ class ScreenRecorderApp:
                 universal_newlines=True,
                 creationflags=creationflags
             )
-        except Exception as e:
+        except FileNotFoundError as e:
+            messagebox.showerror(self.t("error"), self.t("error_ffmpeg_not_found").format(error=str(e)))
+            logger.error(f"FFmpeg not found: {e}")
+        except subprocess.CalledProcessError as e:
             messagebox.showerror(self.t("error"), self.t("error_start_recording").format(error=str(e)))
-            logger.error(f"RECORDING ERROR: {e}. CHECK IF FFMPEG IS STILL RUNNING OR HAS PERMISSION TO RUN ON YOUR SYSTEM.")
-            self.status_label.config(text="Status: Error")
-            return
+            logger.error(f"Error starting recording: {e}")
+        except Exception as e:
+            messagebox.showerror(self.t("error"), self.t("error_unexpected").format(error=str(e)))
+            logger.error(f"Unexpected error: {e}")
 
         self.toggle_widgets(recording=True)
         self.status_label.config(text=self.t("status_recording"))
@@ -497,25 +498,6 @@ class ScreenRecorderApp:
             self.start_timer()
 
         threading.Thread(target=self.read_ffmpeg_output, daemon=True).start()
-
-    def read_ffmpeg_output(self):
-        if self.recording_process:
-            buffer = []
-            try:
-                for stdout_line in iter(self.recording_process.stderr.readline, ""):
-                    buffer.append(stdout_line)
-                    if len(buffer) >= 100:
-                        logger.error("".join(buffer))
-                        buffer = []
-            except BrokenPipeError:
-                logger.warning("FFMPEG PROCESS HAS BEEN CLOSED")
-            except Exception as e:
-                logger.error(f"ERROR READING FFMPEG OUTPUT: {e}")
-            finally:
-                if buffer:
-                    logger.info("".join(buffer))
-                if self.recording_process and self.recording_process.stderr:
-                    self.recording_process.stderr.close()
 
     def stop_recording(self):
         if self.recording_process:
@@ -553,6 +535,25 @@ class ScreenRecorderApp:
         self.record_area = None
         self.running = False
 
+    def read_ffmpeg_output(self):
+        if self.recording_process:
+            buffer = []
+            try:
+                for stdout_line in iter(self.recording_process.stderr.readline, ""):
+                    buffer.append(stdout_line)
+                    if len(buffer) >= 100:
+                        logger.error("".join(buffer))
+                        buffer = []
+            except BrokenPipeError:
+                logger.warning("FFMPEG PROCESS HAS BEEN CLOSED")
+            except Exception as e:
+                logger.error(f"ERROR READING FFMPEG OUTPUT: {e}")
+            finally:
+                if buffer:
+                    logger.info("".join(buffer))
+                if self.recording_process and self.recording_process.stderr:
+                    self.recording_process.stderr.close()
+
     def concat_video_parts(self):
         if len(self.video_parts) > 0:
             ffmpeg_path = self.get_ffmpeg_path()
@@ -560,7 +561,7 @@ class ScreenRecorderApp:
             
             with open(concat_file, 'w') as f:
                 for video in self.video_parts:
-                    f.write(f"file '{os.path.basename(video)}'\n")
+                    f.write(f"file '{os.path.abspath(video)}'\n")
             
             output_file = os.path.join(self.output_folder, f"Video_{datetime.datetime.now().strftime('%m-%d-%Y.%H.%M.%S')}.{self.format_combo.get()}")
             
@@ -580,7 +581,8 @@ class ScreenRecorderApp:
                 
                 os.remove(concat_file)
                 for video in self.video_parts:
-                    os.remove(video)
+                    if os.path.exists(video):
+                        os.remove(video)
                 
             except subprocess.CalledProcessError as e:
                 error_message = e.stderr if e.stderr else str(e)

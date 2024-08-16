@@ -38,11 +38,9 @@ You need to have Python 3.x and FFmpeg installed on your system, beside the addi
 
 For Linux, run this in your terminal:
 
-    ```bash
     sudo apt-get update
     pip install pillow mss numpy opencv-python screeninfo
     sudo apt-get install python3-pil.imagetk
-    ```
 
 ## How to install FFmpeg for Linux
 

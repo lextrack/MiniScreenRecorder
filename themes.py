@@ -2,7 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 
 def set_dark_theme(root):
-    root.tk_setPalette(background="#2e2e2e", foreground="white", activeBackground="#1e1e1e", activeForeground="white")
+    root.tk_setPalette(background="#2e2e2e", 
+                       foreground="white", activeBackground="#1e1e1e", activeForeground="white")
 
     style = ttk.Style()
     style.theme_use("clam")
@@ -14,15 +15,16 @@ def set_dark_theme(root):
     style.map("TButton", background=[('active', '#ac151f')], foreground=[('active', 'white')])
 
 def set_light_theme(root):
-    root.tk_setPalette(background="#f0f0f0", foreground="black", activeBackground="#d0d0d0", activeForeground="black")
+    root.tk_setPalette(background="#f0f0f0", 
+                       foreground="black", activeBackground="#e0e0e0", activeForeground="black")
 
     style = ttk.Style()
     style.theme_use("clam")
 
     style.configure("TLabel", background="#f0f0f0", foreground="black")
-    style.configure("TCombobox", fieldbackground="#d0d0d0", background="#f0f0f0", foreground="black")
-    style.map("TCombobox", fieldbackground=[('readonly', '#d0d0d0')])
-    style.configure("TButton", background="#d0d0d0", foreground="black")
+    style.configure("TCombobox", fieldbackground="#ffffff", background="#f0f0f0", foreground="black")
+    style.map("TCombobox", fieldbackground=[('readonly', '#ffffff')])
+    style.configure("TButton", background="#e0e0e0", foreground="black")
     style.map("TButton", background=[('active', '#c0c0c0')], foreground=[('active', 'black')])
 
 def set_dark_blue_theme(root):
@@ -76,6 +78,3 @@ def set_starry_night_theme(root):
     style.map("TCombobox", fieldbackground=[('readonly', '#1b263b')])
     style.configure("TButton", background="#3b4e6c", foreground="white")
     style.map("TButton", background=[('active', '#a9ad68')], foreground=[('active', 'white')])
-
-
-
