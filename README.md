@@ -38,13 +38,13 @@ As you suspect, the main file to run the app on Linux it's **miniscreenrecorderL
 
 ### To run this app you must install these libraries
 
-For Linux, run this in your terminal:
+For Linux (Debian), run this in your terminal:
 
     sudo apt-get update
     pip install pillow mss numpy opencv-python screeninfo
     sudo apt-get install python3-pil.imagetk
 
-## How to install FFmpeg for Linux
+## How to install FFmpeg for Linux (Debian)
 
   1. Update the package index:
       ```bash
