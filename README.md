@@ -69,6 +69,10 @@ To prevent Windows UAC prompts from interrupting recording, you should select th
 
 Well, there are several experimental settings in the application, but the configuration that gives the **best results** is with the **libx264 codec and the mkv format**.
 
+### Why I can't record the system audio???
+
+Just activate the Stero Mix in the sound settings (in the Recording tab you can find it).
+
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
