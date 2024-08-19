@@ -88,6 +88,8 @@ class ScreenRecorderApp:
         elif theme == "starry night":
             set_starry_night_theme(self.root)
 
+        self.current_theme = theme
+
     def save_config(self, event=None):
         self.config['Settings'] = {
             'language': self.translation_manager.language,
@@ -190,7 +192,7 @@ class ScreenRecorderApp:
         
         self.bitrate_label = ttk.Label(self.root, text=self.t("bitrate") + ":")
         self.bitrate_label.grid(row=4, column=0, padx=10, pady=5, sticky="e")
-        self.bitrate_combo = ttk.Combobox(self.root, values=["2000k", "4000k", "6000k", "8000k", "10000k", "12000k", "14000k", "20000k"], width=25)
+        self.bitrate_combo = ttk.Combobox(self.root, values=["1000k", "2000k", "4000k", "6000k", "8000k", "10000k", "15000k", "20000k"], width=25)
         self.bitrate_combo.grid(row=4, column=1, padx=10, pady=5, sticky="w")
         self.bitrate_combo.current(self.config.getint('Settings', 'bitrate'))
         self.bitrate_combo.config(state="readonly")
@@ -206,7 +208,7 @@ class ScreenRecorderApp:
         
         self.format_label = ttk.Label(self.root, text=self.t("output_format") + ":")
         self.format_label.grid(row=6, column=0, padx=10, pady=5, sticky="e")
-        self.format_combo = ttk.Combobox(self.root, values=["mp4", "mkv"], width=25)
+        self.format_combo = ttk.Combobox(self.root, values=["mkv", "mp4"], width=25)
         self.format_combo.grid(row=6, column=1, padx=10, pady=5, sticky="w")
         self.format_combo.current(self.config.getint('Settings', 'format'))
         self.format_combo.config(state="readonly")
@@ -435,12 +437,20 @@ class ScreenRecorderApp:
 
             if width <= 0 or height <= 0:
                 messagebox.showerror(self.t("error"), self.t("error_invalid_area"))
+                self.update_status_label_error_recording(self.t("error_recording"))
+                self.stop_recording()
+                self.stop_timer()
+                self.toggle_widgets()
                 return
 
             width -= width % 2
             height -= height % 2
             if width <= 0 or height <= 0:
                 messagebox.showerror(self.t("error"), self.t("error_adjusted_area"))
+                self.update_status_label_error_recording(self.t("error_recording"))
+                self.stop_recording()
+                self.stop_timer()
+                self.toggle_widgets()
                 return
         else:
             x1 = y1 = 0
@@ -457,13 +467,31 @@ class ScreenRecorderApp:
             "-f", "pulse",
             "-i", audio_device,
             "-filter:a", f"volume={volume/100}",
-            "-c:v", codec,
-            "-b:v", bitrate,
+            "-threads", "0",
             "-pix_fmt", "yuv420p",
             "-loglevel", "info",
-            "-hide_banner",
-            self.video_path
+            "-hide_banner"
         ]
+
+        if codec == "libx264":
+            ffmpeg_args.extend([
+                "-c:v", "libx264",
+                "-preset", "veryfast",
+                "-b:v", bitrate,
+            ])
+        elif codec == "libx265":
+            ffmpeg_args.extend([
+                "-c:v", "libx265",
+                "-preset", "medium",
+                "-b:v", bitrate,
+            ])
+        else:
+            ffmpeg_args.extend([
+                "-c:v", codec,
+                "-b:v", bitrate,
+            ])
+
+        ffmpeg_args.append(self.video_path)
 
         try:
             self.recording_process = subprocess.Popen(
@@ -474,14 +502,19 @@ class ScreenRecorderApp:
                 universal_newlines=True
             )
         except FileNotFoundError as e:
-            messagebox.showerror(self.t("error"), self.t("error_ffmpeg_not_found").format(error=str(e)))
+            messagebox.showerror("Error", f"FFmpeg not found.")
+            self.update_status_label_error_recording(self.t("error_recording"))
             logger.error(f"FFmpeg not found: {e}")
-        except subprocess.CalledProcessError as e:
-            messagebox.showerror(self.t("error"), self.t("error_start_recording").format(error=str(e)))
-            logger.error(f"Error starting recording: {e}")
+            self.stop_recording()
+            self.stop_timer()
+            self.toggle_widgets()
         except Exception as e:
-            messagebox.showerror(self.t("error"), self.t("error_unexpected").format(error=str(e)))
-            logger.error(f"Unexpected error: {e}")
+            messagebox.showerror("Error", f"An error has occurred.")
+            self.update_status_label_error_recording(self.t("error_recording"))
+            logger.error(f"Error starting recording: {e}")
+            self.stop_recording()
+            self.stop_timer()
+            self.toggle_widgets()
 
         self.toggle_widgets(recording=True)
         self.status_label.config(text=self.t("status_recording"))
@@ -490,6 +523,10 @@ class ScreenRecorderApp:
             self.start_timer()
 
         threading.Thread(target=self.read_ffmpeg_output, daemon=True).start()
+
+
+    def update_status_label_error_recording(self, text):
+        self.status_label.after(0, lambda: self.status_label.config(text=text))
 
     def stop_recording(self):
         if self.recording_process:
@@ -541,6 +578,7 @@ class ScreenRecorderApp:
                 logger.warning("FFMPEG PROCESS HAS BEEN CLOSED")
             except Exception as e:
                 logger.error(f"ERROR READING FFMPEG OUTPUT: {e}")
+                self.update_status_label_error_recording(self.t("error_recording"))
             finally:
                 if buffer:
                     logger.info("".join(buffer))
@@ -549,12 +587,12 @@ class ScreenRecorderApp:
 
     def concat_video_parts(self):
         if len(self.video_parts) > 0:
-            concat_file = os.path.join(self.output_folder, "concat_list.txt")
+            concat_file = os.path.join(self.output_folder, "concat_list.txt")     
+            output_file = os.path.join(self.output_folder, f"Video_{datetime.datetime.now().strftime('%m-%d-%Y.%H.%M.%S')}.{self.format_combo.get()}")
+
             with open(concat_file, 'w') as f:
                 for video in self.video_parts:
                     f.write(f"file '{os.path.basename(video)}'\n")
-            
-            output_file = os.path.join(self.output_folder, f"Video_{datetime.datetime.now().strftime('%m-%d-%Y.%H.%M.%S')}.{self.format_combo.get()}")
             
             concat_command = [
                 "ffmpeg",
@@ -562,11 +600,14 @@ class ScreenRecorderApp:
                 "-safe", "0",
                 "-i", concat_file,
                 "-c", "copy",
+                "-movflags", "+faststart",
                 output_file
             ]
             
             try:
-                subprocess.run(concat_command, check=True, stderr=subprocess.PIPE)
+                print(f"Executing command: {' '.join(concat_command)}")
+                result = subprocess.run(concat_command, check=True, capture_output=True, text=True)
+                print(f"FFmpeg output: {result.stderr}")
                 
                 os.remove(concat_file)
                 for video in self.video_parts:
@@ -576,10 +617,11 @@ class ScreenRecorderApp:
                 error_message = e.stderr.decode() if e.stderr else str(e)
                 messagebox.showerror(self.t("error"), self.t("error_concat_video").format(error=error_message))
                 logger.error(f"ERROR MERGING VIDEO: {error_message}")
+                self.update_status_label_error_recording(self.t("error_recording"))
 
             self.video_parts = []
             self.current_video_part = 0
-
+            
     def on_closing(self):
         self.close_preview()
         if self.running:
@@ -621,7 +663,10 @@ class ScreenRecorderApp:
 
     def stop_timer(self):
         self.running = False
-        self.timer_label.config(text="00:00:00", foreground="white")
+        if self.current_theme == "light":
+            self.timer_label.config(text="00:00:00", foreground="black")
+        else:
+            self.timer_label.config(text="00:00:00", foreground="white")
 
     def update_timer(self):
         if self.running:
@@ -639,10 +684,8 @@ class ScreenRecorderApp:
         text = self.t("version_info")
 
         if self.translation_manager.is_rtl:
-            anchor = tk.E 
             justify = tk.RIGHT
         else:
-            anchor = tk.W 
             justify = tk.LEFT
 
         text_widget = tk.Text(info_window, wrap=tk.WORD, padx=10, pady=10, bg=info_window.cget("bg"), bd=0, font=("Arial", 10))
@@ -650,9 +693,8 @@ class ScreenRecorderApp:
         text_widget.configure(state=tk.DISABLED) 
         text_widget.pack(fill=tk.BOTH, expand=True)
 
-        text_widget.tag_configure("right", justify=tk.RIGHT)
-        text_widget.tag_add("right", "1.0", tk.END) if self.translation_manager.is_rtl else text_widget.tag_configure("left", justify=tk.LEFT)
-        text_widget.tag_add("left", "1.0", tk.END) if not self.translation_manager.is_rtl else None
+        text_widget.tag_configure("justify", justify=justify)
+        text_widget.tag_add("justify", "1.0", tk.END)
 
     def reload_ui(self):
         for widget in self.root.winfo_children():

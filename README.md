@@ -3,7 +3,7 @@
 It's an open-source screen and audio recorder for Windows and Linux.
 
 <p align="center">
-  <a href="https://i.postimg.cc/"><img src="https://i.postimg.cc/TwNGNVCF/2024-07-31-20h19-14.png"></a>
+  <img src="./Capture.png">
 </p>
 
 ## Features
@@ -32,7 +32,9 @@ If you download the packaged .exe file from the [Releases](https://github.com/Le
 
 ### Linux Users
 
-You need to have Python 3.x and FFmpeg installed on your system, beside the additional libraries.
+You need to have Python 3.x and FFmpeg installed on your system, beside the additional libraries. 
+
+As you suspect, the main file to run the app on Linux it's **miniscreenrecorderLinux.py**.
 
 ### To run this app you must install these libraries
 
@@ -57,29 +59,15 @@ For Linux, run this in your terminal:
       ffmpeg -version
       ```
 
-## Steps (Linux)
-
-1. Clone the repository from GitHub
-
-    ```bash
-    git clone https://github.com/Lextrack/MiniScreenRecorder.git
-    ```
-
-2. Navigate to the project directory
-
-    ```bash
-    cd MiniScreenRecorder
-    ```
-
-3. Run the app:
-
-    ```bash
-    python3 miniscreenrecorderLinux.py
-    ```
+## Known issues
 
 ### Warning about User Account Control
 
-To prevent Windows UAC prompts from interrupting recording, you should select the second-to-last option, which says "Notify me only when apps try to make changes to my computer (do not dim my desktop)". Or, if you want, completely disable it.
+To prevent Windows UAC prompts from interrupting recording, you should select the second-to-last option, which says **Notify me only when apps try to make changes to my computer (do not dim my desktop)**. Or, if you want, completely disable it.
+
+### Sometimes, the recording is not as smooth as I would like it to be.
+
+Well, there are several experimental settings in the application, but the configuration that gives the **best results** is with the **libx264 codec and the mkv format**.
 
 ## License
 
