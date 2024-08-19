@@ -41,6 +41,8 @@ As you suspect, the main file to run the app on Linux it's **miniscreenrecorderL
 For Linux (Debian), run this in your terminal:
 
     sudo apt-get update
+    sudo apt install python3
+    sudo apt install python3-pip
     pip install pillow mss numpy opencv-python screeninfo
     sudo apt-get install python3-pil.imagetk
 
@@ -69,7 +71,7 @@ To prevent Windows UAC prompts from interrupting recording, you should select th
 
 Well, there are several experimental settings in the application, but the configuration that gives the **best results** is with the **libx264 codec and the mkv format**.
 
-### Why I can't record the system audio???
+### Why can't I record the system audio?
 
 Just activate the Stero Mix in the sound settings (in the Recording tab you can find it).
 
