@@ -46,7 +46,14 @@ class ScreenRecorderApp:
 
         self.audio_manager = AudioManager()
         self.audio_devices = self.audio_manager.audio_devices
+        if len(self.audio_devices) == 0:
+            messagebox.showerror("Error", "No audio devices.")
+            return
+
         self.monitors = self.get_monitors()
+        if len(self.monitors) == 0:
+            messagebox.showerror("Error", "No monitors found.")
+            return
 
         self.set_icon()
 
@@ -265,6 +272,11 @@ class ScreenRecorderApp:
         self.status_label.grid(row=16, column=0, columnspan=2, pady=5)
         self.status_label.config(font=("Arial", 10))
 
+    def refresh_audio_devices(self):
+        self.audio_manager.refresh_devices()
+        self.audio_combo['values'] = self.audio_manager.audio_devices
+        self.audio_combo.current(0)
+
     def toggle_preview_monitor(self):
         if self.preview_running:
             self.close_preview()
@@ -423,6 +435,8 @@ class ScreenRecorderApp:
         codec = self.codec_combo.get()
         audio_device = self.audio_combo.get()
         volume = self.volume_scale.get()
+
+        audio_device = self.audio_manager._normalize_audio_device_name(audio_device)
 
         monitor_index = self.monitor_combo.current()
         monitor = self.monitors[monitor_index]

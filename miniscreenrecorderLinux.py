@@ -1,5 +1,6 @@
 #DEBIAN
 
+import locale
 import platform
 import sys
 import tkinter as tk
@@ -41,8 +42,15 @@ class ScreenRecorderApp:
         self.set_theme(self.config.get('Settings', 'theme', fallback='dark'))
 
         self.audio_devices = self.get_audio_devices()
-        self.monitors = self.get_monitors()
+        if len(self.audio_devices) == 0:
+            messagebox.showerror("Error", "No audio devices.")
+            return
 
+        self.monitors = self.get_monitors()
+        if len(self.monitors) == 0:
+            messagebox.showerror("Error", "No monitors found.")
+            return
+        
         self.set_icon()
 
         self.init_ui()
@@ -369,30 +377,43 @@ class ScreenRecorderApp:
         if not os.path.exists(self.output_folder):
             os.makedirs(self.output_folder)
 
+    def _normalize_audio_device_name(self, audio_device):
+        encodings_to_try = ['utf-8', 'latin-1', 'cp1252']
+
+        for encoding in encodings_to_try:
+            try:
+                audio_device = audio_device.encode(encoding).decode('utf-8')
+                break
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                continue
+
+        return audio_device
+
     def get_audio_devices(self):
-        if platform.system() == 'Windows':
-            cmd = ["ffmpeg", "-list_devices", "true", "-f", "dshow", "-i", "dummy"]
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            lines = result.stderr.splitlines()
-            devices = []
-            for line in lines:
-                if "audio" in line:
-                    parts = line.split("\"")
-                    if len(parts) > 1:
-                        devices.append(parts[1])
-            return devices
-        elif platform.system() == 'Linux':
+        devices = []
+        if platform.system() == 'Linux':
             cmd = ["pactl", "list", "sources"]
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
             lines = result.stdout.splitlines()
-            devices = []
+
+            current_device = None
             for line in lines:
                 if "Name:" in line:
                     parts = line.split()
                     if len(parts) > 1:
-                        devices.append(parts[1])
-            return devices
+                        current_device = parts[1]
+                elif "Description:" in line and current_device:
+                    description = line.split(":", 1)[1].strip()
+                    normalized_name = self._normalize_audio_device_name(current_device)
+                    devices.append(f"{description} ({normalized_name})")
+                    current_device = None
 
+        if not devices:
+            logger.error("No active audio devices were found. Please check your audio settings.")
+            messagebox.showerror("Error", "No active audio devices were found. Please check your audio settings.")
+
+        return devices
+    
     def get_monitors(self):
         return get_monitors()
 

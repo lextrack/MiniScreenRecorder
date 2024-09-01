@@ -30,6 +30,10 @@ Just a simple gameplay recorded with this app. Click the badge to watch the vide
 
 If you download the packaged .exe file from the [Releases](https://github.com/Lextrack/MiniScreenRecorder/releases) section, you **do not** need to install Python, FFmpeg, or any additional libraries. Everything is included in the executable.
 
+But if you want to test on the Windows script (miniscreenrecorder.py) first install the latest version of Python and then run these packages in the CMD:
+
+    pip install pillow mss numpy opencv-python screeninfo
+
 ### Linux Users
 
 You need to have Python 3.x and FFmpeg installed on your system, beside the additional libraries. 
